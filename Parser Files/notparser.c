@@ -12,136 +12,28 @@ int numtokens;
 int currentindex = 0;
 char identifier[128];
 
-
-
-// integerConstant | identifier [.identifier ] [ [ expression ] | (expressionList ) ] | (expression) | stringLiteral | true | false | null | this
-ParserInfo operand(){
-	ParserInfo pi;
-	Token token = GetNextToken();
-	if(!(strcmp(token.lx, "true") == 0 || strcmp(token.lx, "false") == 0 || strcmp(token.lx, "null") == 0 || strcmp(token.lx, "this") == 0 || token.tp == STRING || token.tp == INT || token.tp == ID)){
-		pi.er = syntaxError;
-		pi.tk = token;
-	}
-	// add .identifier, expression and expessionlist
-
-	return pi;
-}
-
-//  ( - | ~ | ε ) operand
-ParserInfo factor(){
-	ParserInfo pi;
-
-	Token token = PeekNextToken();
-
-	if ((strcmp(token.lx, "-") == 0 || strcmp(token.lx, "~")) == 0)
+/*char* TokenTypeString (TokenType t)
+{
+	switch (t)
 	{
-		GetNextToken();
+		case RESWORD: return "RESWORD";
+		case ID: return "ID";
+		case INT: return "INT";
+		case SYMBOL: return "SYMBOL";
+		case STRING: return "STRING";
+		case EOFile: return "EOFile";
+		case ERR: return "ERR";
+		default: return "Not a recognised token type";
 	}
 
-	return pi;
 }
 
-// factor { ( * | / ) factor }
-ParserInfo term(){
+void PrintTokens (Token t)
+{
+	printf ("<%s, %i, %s, %s>\n", t.fl, t.ln , t.lx, TokenTypeString (t.tp));
+}*/
 
-}
-
-// term { ( + | - ) term }
-ParserInfo ArithmeticExpression(){
-
-}
-
-// ArithmeticExpression { ( = | > | < ) ArithmeticExpression }
-ParserInfo relationalExpression(){
-
-}
-
-// relationalExpression { ( & | | ) relationalExpression }
-ParserInfo expression(){
-
-}
-
-// return [ expression ] ;
-ParserInfo returnStatement(){
-
-}
-
-// expression { , expression } | ε
-ParserInfo expressionList(){
-
-}
-
-// identifier [ . identifier ] ( expressionList )
-ParserInfo subroutineCall(){
-
-}
-
-// do subroutineCall ;
-ParserInfo doStatement(){
-
-}
-
-// while ( expression ) { {statement} }
-ParserInfo whileStatement(){
-
-}
-
-//  if ( expression ) { {statement} } [ else { {statement} } ]
-ParserInfo ifStatement(){
-
-}
-
-// let identifier [ [ expression ] ] = expression ;
-ParserInfo letStatement(){
-
-}
-
-// var type identifier { , identifier } ;
-ParserInfo varDeclarStatement(){
-
-}
-
-// varDeclarStatement | letStatemnt | ifStatement | whileStatement | doStatement | returnStatement
-ParserInfo statement(){
-
-}
-
-//  { {statement} } 
-ParserInfo subroutineBody(){
-
-}
-
-// type identifier {, type identifier} | ε
-ParserInfo paramList(){
-
-}
-
-// (constructor | function | method) (type|void) identifier (paramList) subroutineBody
-ParserInfo subroutineDeclar(){
-
-}
-
-// int | char | boolean | identifier
-ParserInfo type(){
-
-}
-
-//  (static | field) type identifier {, identifier} ;
-ParserInfo classVarDeclar(){
-
-}
-
-// classVarDeclar | subroutineDeclar
-ParserInfo memberDeclar(){
-
-}
-
-// class identifier { {memberDeclar} }
-ParserInfo class(){
-
-}
-
-ParserInfo checkBrackets(int index, ParserInfo pi){
+ParserInfo CheckSymbols(int index, ParserInfo pi){
 	int skip = 0;
 
 	if(strcmp(alltokens[index].lx, "(") == 0){
@@ -208,6 +100,31 @@ ParserInfo checkBrackets(int index, ParserInfo pi){
 	return pi;
 }
 
+int isVarType(int index){
+	if(alltokens[index+1].tp == INT || strcmp(alltokens[index+1].lx, 'char') == 0 || strcmp(alltokens[index+1].lx, 'boolean') == 0 || strcmp(alltokens[index+1].lx, identifier) == 0){
+		return 1;
+	}
+	return 0;
+}
+
+ParserInfo memberDeclar(int index, ParserInfo pi){
+	if(strcmp(alltokens[index+3].lx, "(")==0){
+		pi = subroutineDeclar(index, pi);
+	} else{
+		pi = classVarDeclar(index, pi);
+	}
+
+	return pi;
+}
+
+ParserInfo subroutineDeclar(int index, ParserInfo pi){
+	return pi;
+}
+
+ParserInfo classVarDeclar(int index, ParserInfo pi){
+	return pi;
+}
+
 int InitParser (char* file_name)
 {
 	InitLexer(file_name);
@@ -229,8 +146,6 @@ int InitParser (char* file_name)
 	for(int i = 0; i < numtokens; i++){
 		alltokens[i] = GetNextToken();
 	}
-	
-	StopLexer();
 
 	return 1;
 }
@@ -242,16 +157,26 @@ ParserInfo Parse ()
 
 	ParserInfo pi;
 
-	// Check for missing brackets
+	if(strcmp(alltokens[0].lx, "class") != 0){
+		pi.er = classExpected;
+		pi.tk = alltokens[0];
+		return pi;
+	}
+	strcpy(identifier, alltokens[0].lx);
+	
 	for(int i = 1; i < numtokens; i++){
 		if(alltokens[i].tp == SYMBOL){
-			pi = checkBrackets(i, pi);
+			pi = CheckSymbols(i, pi);
 			if(pi.er != none){
 				break;
 			}
+		} else if(isVarType(i) == 1){
+			pi = memberDeclar(i, pi);
+		} else {
+			pi.er = none;
 		}
-	}
 
+	}
 	return pi;
 }
 
