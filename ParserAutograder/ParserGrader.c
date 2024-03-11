@@ -177,7 +177,7 @@ int t_parser ()
 	for (int j = 0 ; j < NumberTestFiles ; j++) // for each test file
 	{
 		printf ("File %s \n", testFiles[j]);
-		InitLexer (testFiles[j]);
+		InitParser (testFiles[j]);
 		fail = 0;
 		ParserInfo p = Parse ();
 		if (p.er != correctInfo[j].er)

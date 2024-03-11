@@ -7,9 +7,31 @@
 
 
 // you can declare prototypes of parser functions below
-
-
-
+ParserInfo operand();
+ParserInfo factor();
+ParserInfo term();
+ParserInfo ArithmeticExpression();
+ParserInfo relationalExpression();
+ParserInfo expression();
+ParserInfo returnStatement();
+ParserInfo expressionList();
+ParserInfo subroutineCall();
+ParserInfo doStatement();
+ParserInfo whileStatement();
+ParserInfo ifStatement();
+ParserInfo elseStatement();
+ParserInfo letStatement();
+ParserInfo varDeclarStatement();
+ParserInfo statement();
+ParserInfo subroutineBody();
+ParserInfo paramList();
+ParserInfo subroutineDeclar();
+ParserInfo type();
+ParserInfo classVarDeclar();
+ParserInfo memberDeclar();
+ParserInfo class();
+int isVarIdentifier(char* inputID);
+int isFunctionIdentifier(char* inputID);
 
 Token* alltokens;
 int numtokens;
@@ -68,18 +90,6 @@ ParserInfo operand(){
 			return pi;
 		}
 		currentindex++;
-
-		if(!(strcmp(alltokens[currentindex].lx,")") == 0)){
-			pi.er = closeBraceExpected;
-			pi.tk = token;
-			return pi;
-		}
-
-		token = alltokens[currentindex];
-		if(currentindex >= numtokens){
-			return pi;
-		}
-		currentindex++;
 	}
 
 	if(!(strcmp(token.lx, "true") == 0 || strcmp(token.lx, "false") == 0 || strcmp(token.lx, "null") == 0 || strcmp(token.lx, "this") == 0 || token.tp == STRING || token.tp == INT || token.tp == ID)){
@@ -87,7 +97,6 @@ ParserInfo operand(){
 		pi.tk = token;
 		return pi;
 	}
-
 	if(token.tp == ID){
 		if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
 			pi.er = undecIdentifier;
@@ -120,6 +129,7 @@ ParserInfo operand(){
 			currentindex++;
 		}
 	}
+	// add expression and expessionlist
 
 	return pi;
 }
@@ -137,10 +147,7 @@ ParserInfo factor(){
 
 	if ((strcmp(token.lx, "-") == 0 || strcmp(token.lx, "~")) == 0 || strcmp(token.lx, "") == 0)
 	{
-		pi = operand();
-		if(pi.er != none){
-			return pi;
-		}
+		operand();
 		
 	} else {
 		pi.er = syntaxError;
@@ -153,6 +160,7 @@ ParserInfo factor(){
 // factor { ( * | / ) factor }
 ParserInfo term(){
 	ParserInfo pi = factor();
+	
 	if(pi.er != none){
 		return pi;
 	}
@@ -465,7 +473,7 @@ ParserInfo whileStatement(){
 		return pi;
 	}
 
-	Token token = alltokens[currentindex];
+	token = alltokens[currentindex];
 	if(currentindex >= numtokens){
 		return pi;
 	}
@@ -477,7 +485,7 @@ ParserInfo whileStatement(){
 		return pi;
 	}
 
-	Token token = alltokens[currentindex];
+	token = alltokens[currentindex];
 	if(currentindex >= numtokens){
 		return pi;
 	}
@@ -492,11 +500,6 @@ ParserInfo whileStatement(){
 	while(!strcmp(token.lx, "}")){
 		pi = statement();
 		if(pi.er != none){
-			if(!(strcmp(alltokens[currentindex].lx, "}") == 0)){
-				pi.er = closeBraceExpected;
-				pi.tk = alltokens[currentindex];
-				return pi;
-			}
 			return pi;
 		}	
 		token = alltokens[currentindex];
@@ -527,7 +530,7 @@ ParserInfo ifStatement(){
 		return pi;
 	}
 
-	Token token = alltokens[currentindex];
+	token = alltokens[currentindex];
 	if(currentindex >= numtokens){
 		return pi;
 	}
@@ -539,7 +542,7 @@ ParserInfo ifStatement(){
 		return pi;
 	}
 
-	Token token = alltokens[currentindex];
+	token = alltokens[currentindex];
 	if(currentindex >= numtokens){
 		return pi;
 	}
@@ -597,11 +600,6 @@ ParserInfo elseStatement(){
 	while(!(strcmp(token.lx, "}") == 0)){
 		pi = statement();
 		if(pi.er != none){
-			if(!(strcmp(alltokens[currentindex].lx, "}") == 0)){
-				pi.er = closeBraceExpected;
-				pi.tk = alltokens[currentindex];
-				return pi;
-			}
 			return pi;
 		}	
 		token = alltokens[currentindex];
@@ -904,7 +902,7 @@ ParserInfo subroutineDeclar(){
 		return pi;
 	}
 
-	Token token = alltokens[currentindex];
+	token = alltokens[currentindex];
 	if(!(strcmp(token.lx, "void") == 0)){
 		pi = type();
 		if(pi.er != none){
@@ -1157,73 +1155,6 @@ ParserInfo class(){
 
 }
 
-ParserInfo checkBrackets(int index, ParserInfo pi){
-	int skip = 0;
-
-	if(strcmp(alltokens[index].lx, "(") == 0){
-		for(int j = index + 1; j < numtokens; j++){
-			if(strcmp(alltokens[j].lx, ")") == 0 && skip == 0){
-				return pi;
-			} else if(strcmp(alltokens[j].lx, ")") == 0){
-				skip--;
-			} else if(strcmp(alltokens[j].lx, "(") == 0){
-				skip++;
-			}
-		}
-		pi.tk = alltokens[index + 1];
-		pi.er = closeParenExpected;
-	} else if(strcmp(alltokens[index].lx, ")") == 0){
-		for(int j = index-1; j > 0; j--){
-			if(strcmp(alltokens[j].lx, "(") == 0 && skip == 0){
-				return pi;
-			} else if(strcmp(alltokens[j].lx, "(") == 0){
-				skip--;
-			} else if(strcmp(alltokens[j].lx, ")") == 0){
-				skip++;
-			}
-		}
-		pi.tk = alltokens[index - 1];
-		pi.er = openParenExpected;
-	} else if(strcmp(alltokens[index].lx, "{") == 0){
-		for(int j = index + 1; j < numtokens; j++){
-			if(strcmp(alltokens[j].lx, "}") == 0 && skip == 0){
-				return pi;
-			} else if(strcmp(alltokens[j].lx, "}") == 0){
-				skip--;
-			} else if(strcmp(alltokens[j].lx, "{") == 0){
-				skip++;
-			}
-		}
-		pi.tk = alltokens[index + 1];
-		pi.er = closeBraceExpected;
-	} else if(strcmp(alltokens[index].lx, "}") == 0){
-		for(int j = index-1; j > 0; j--){
-			if(strcmp(alltokens[j].lx, "{") == 0 && skip == 0){
-				return pi;
-			} else if(strcmp(alltokens[j].lx, "{") == 0){
-				skip--;
-			} else if(strcmp(alltokens[j].lx, "}") == 0){
-				skip++;
-			}
-		}
-		pi.tk = alltokens[index - 1];
-		pi.er = openBraceExpected;
-	} else if(strcmp(alltokens[index].lx, "[") == 0){
-		for(int j = index + 1; j < numtokens; j++){
-			if(strcmp(alltokens[j].lx, "]") == 0 && skip == 0){
-				return pi;
-			} else if(strcmp(alltokens[j].lx, "]") == 0){
-				skip--;
-			} else if(strcmp(alltokens[j].lx, "[") == 0){
-				skip++;
-			}
-		}
-		pi.tk = alltokens[index + 2];
-		pi.er = closeBracketExpected;
-	}
-	return pi;
-}
-
 int InitParser (char* file_name)
 {
 	InitLexer(file_name);
@@ -1257,16 +1188,6 @@ ParserInfo Parse ()
 	InitParser(token.fl);
 
 	ParserInfo pi;
-
-	// Check for missing brackets
-	for(int i = 1; i < numtokens; i++){
-		if(alltokens[i].tp == SYMBOL){
-			pi = checkBrackets(i, pi);
-			if(pi.er != none){
-				break;
-			}
-		}
-	}
 
 	pi = class();
 

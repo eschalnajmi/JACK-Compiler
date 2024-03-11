@@ -68,18 +68,6 @@ ParserInfo operand(){
 			return pi;
 		}
 		currentindex++;
-
-		if(!(strcmp(alltokens[currentindex].lx,")") == 0)){
-			pi.er = closeBraceExpected;
-			pi.tk = token;
-			return pi;
-		}
-
-		token = alltokens[currentindex];
-		if(currentindex >= numtokens){
-			return pi;
-		}
-		currentindex++;
 	}
 
 	if(!(strcmp(token.lx, "true") == 0 || strcmp(token.lx, "false") == 0 || strcmp(token.lx, "null") == 0 || strcmp(token.lx, "this") == 0 || token.tp == STRING || token.tp == INT || token.tp == ID)){
@@ -87,7 +75,6 @@ ParserInfo operand(){
 		pi.tk = token;
 		return pi;
 	}
-
 	if(token.tp == ID){
 		if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
 			pi.er = undecIdentifier;
@@ -120,6 +107,7 @@ ParserInfo operand(){
 			currentindex++;
 		}
 	}
+	// add expression and expessionlist
 
 	return pi;
 }
@@ -137,10 +125,7 @@ ParserInfo factor(){
 
 	if ((strcmp(token.lx, "-") == 0 || strcmp(token.lx, "~")) == 0 || strcmp(token.lx, "") == 0)
 	{
-		pi = operand();
-		if(pi.er != none){
-			return pi;
-		}
+		operand();
 		
 	} else {
 		pi.er = syntaxError;
@@ -153,6 +138,7 @@ ParserInfo factor(){
 // factor { ( * | / ) factor }
 ParserInfo term(){
 	ParserInfo pi = factor();
+	
 	if(pi.er != none){
 		return pi;
 	}
@@ -492,11 +478,6 @@ ParserInfo whileStatement(){
 	while(!strcmp(token.lx, "}")){
 		pi = statement();
 		if(pi.er != none){
-			if(!(strcmp(alltokens[currentindex].lx, "}") == 0)){
-				pi.er = closeBraceExpected;
-				pi.tk = alltokens[currentindex];
-				return pi;
-			}
 			return pi;
 		}	
 		token = alltokens[currentindex];
@@ -597,11 +578,6 @@ ParserInfo elseStatement(){
 	while(!(strcmp(token.lx, "}") == 0)){
 		pi = statement();
 		if(pi.er != none){
-			if(!(strcmp(alltokens[currentindex].lx, "}") == 0)){
-				pi.er = closeBraceExpected;
-				pi.tk = alltokens[currentindex];
-				return pi;
-			}
 			return pi;
 		}	
 		token = alltokens[currentindex];
