@@ -1086,7 +1086,7 @@ int StopParser ()
 	return 1;
 }
 
-/*#ifndef TEST_PARSER
+#ifndef TEST_PARSER
 int main ()
 {
 	InitParser("semicolonExpected.jack");
@@ -1094,4 +1094,4 @@ int main ()
 	ShowInfo(pi);
 	return 1;
 }
-#endif*/
+#endif
