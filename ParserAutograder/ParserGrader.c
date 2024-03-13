@@ -177,7 +177,7 @@ int t_parser ()
 	for (int j = 0 ; j < NumberTestFiles ; j++) // for each test file
 	{
 		printf ("File %s \n", testFiles[j]);
-		InitLexer (testFiles[j]);
+		InitParser (testFiles[j]);
 		fail = 0;
 		ParserInfo p = Parse ();
 		if (p.er != correctInfo[j].er)
@@ -207,7 +207,7 @@ int t_parser ()
 }
 
 
-#ifdef TEST_PARSER
+#ifndef TEST_PARSER
 int main (int argc, char* argv[])
 {
 	FILE* jsonFile;

@@ -33,68 +33,13 @@ ParserInfo class();
 int isVarIdentifier(char* inputID);
 int isFunctionIdentifier(char* inputID);
 
-/*char* TokenTypeString (TokenType t)
-{
-	switch (t)
-	{
-		case RESWORD: return "RESWORD";
-		case ID: return "ID";
-		case INT: return "INT";
-		case SYMBOL: return "SYMBOL";
-		case STRING: return "STRING";
-		case EOFile: return "EOFile";
-		case ERR: return "ERR";
-		default: return "Not a recognised token type";
-	}
-
-}
-
-char* ErrorString (SyntaxErrors e)
-{
-
-	switch (e)
-	{
-		case none: return "no errors";
-		case lexerErr: return "lexer error";
-		case classExpected: return "keyword class expected";
-		case idExpected: return "identifier expected";
-		case openBraceExpected:	return "{ expected";
-		case closeBraceExpected: return "} expected";
-		case memberDeclarErr: return "class member declaration must begin with static, field, constructor , function , or method";
-		case classVarErr: return "class variables must begin with field or static";
-		case illegalType: return "a type must be int, char, boolean, or identifier";
-		case semicolonExpected: return "; expected";
-		case subroutineDeclarErr: return "subrouting declaration must begin with constructor, function, or method";
-		case openParenExpected: return "( expected";
-		case closeParenExpected: return ") expected";
-		case closeBracketExpected: return "] expected";
-		case equalExpected: return "= expected";
-		case syntaxError: return "syntax error";
-		default: return "not a valid error code";
-	}
-}
-
-void ShowInfo (ParserInfo pn)
-{
-	if (pn.er == none)
-		printf ("none\n");
-	else
-		printf ("error type: %s, line: %i,token: %s, \n" , ErrorString(pn.er),  pn.tk.ln , pn.tk.lx  );
-}
-
-
-void PrintToken (Token t)
-{
-	printf ("<%s, %i, %s, %s>\n", t.fl, t.ln , t.lx, TokenTypeString (t.tp));
-}*/
-
-
+Token* alltokens;
 int numtokens;
 int currentindex = 0;
-/*char* varIdentifiers[500];
+char* varIdentifiers[500];
 int varIDIndex = 0;
 char* functionIdentifiers[500];
-int functionIDIndex = 0;*/
+int functionIDIndex = 0;
 
 // [] 0 or 1
 // {} 0 or many
@@ -104,25 +49,66 @@ ParserInfo operand(){
 	pi.er = none;
 	int synterror = 0;
 
-	Token token =  GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
-	if(!(strcmp(token.lx, "true") == 0 || strcmp(token.lx, "false") == 0 || strcmp(token.lx, "null") == 0 || strcmp(token.lx, "this") == 0 || token.tp == STRING || token.tp == INT || token.tp == ID || strcmp(token.lx, "(") == 0)){
+	if(strcmp(token.lx, "[") == 0){
+		pi = expression();
+		if(pi.er != none){
+			return pi;
+		}
+
+		token = alltokens[currentindex];
+		if(currentindex >= numtokens){
+			return pi;
+		}
+		currentindex++;
+		
+		if(!(strcmp(token.lx, "]") == 0)){
+			pi.er = closeBracketExpected;
+			pi.tk = token;
+			return pi;
+		}
+	}
+
+	if(strcmp(token.lx, "(") == 0){
+		if(strcmp(alltokens[currentindex + 1].lx,",") == 0){
+			pi = expressionList();
+		} else{
+			pi = expression();
+		}
+
+		if(pi.er != none){
+			return pi;
+		}
+
+		token = alltokens[currentindex];
+		if(currentindex >= numtokens){
+			return pi;
+		}
+		currentindex++;
+	}
+
+	if(!(strcmp(token.lx, "true") == 0 || strcmp(token.lx, "false") == 0 || strcmp(token.lx, "null") == 0 || strcmp(token.lx, "this") == 0 || token.tp == STRING || token.tp == INT || token.tp == ID)){
 		pi.er = syntaxError;
 		pi.tk = token;
 		return pi;
 	}
-
 	if(token.tp == ID){
-		/*if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+		if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
 			pi.er = undecIdentifier;
 			pi.tk = token;
 			return pi;
-		}*/
-
-		token = PeekNextToken();
+		}
 		if(strcmp(token.lx, ".") == 0){
-			token = GetNextToken();
-			token = GetNextToken();
+			token = alltokens[currentindex];
+			if(currentindex >= numtokens){
+				return pi;
+			}
+			currentindex++;
 
 			if(token.tp != ID){
 				pi.er = idExpected;
@@ -130,68 +116,21 @@ ParserInfo operand(){
 				return pi;
 			}
 
-			token = PeekNextToken();
-
-			if(strcmp(token.lx, "[") == 0){
-				GetNextToken();
-				pi = expression();
-				if(pi.er != none){
-					return pi;
-				}
-
-				token = GetNextToken();
-				
-				if(!(strcmp(token.lx, "]") == 0)){
-					pi.er = closeBracketExpected;
-					pi.tk = token;
-					return pi;
-				}
-			} else if(strcmp(token.lx, "(") == 0){
-				token = GetNextToken();
-				pi = expressionList();
-
-				if(pi.er != none){
-					return pi;
-				}
-
-				token = GetNextToken();
-				if(!(strcmp(token.lx, ")") == 0)){
-					pi.er = closeParenExpected;
-					pi.tk = token;
-					return pi;
-				}
-			}
-		} else if(strcmp(token.lx, "[") == 0){
-			token = GetNextToken();
-			pi = expression();
-
-			if(pi.er != none){
-				return pi;
-			}
-
-			token = GetNextToken();
-			if(!(strcmp(token.lx, "]") == 0)){
-				pi.er = closeBracketExpected;
+			if(isFunctionIdentifier(token.lx) == 0){
+				pi.er = undecIdentifier;
 				pi.tk = token;
 				return pi;
 			}
+
+			token = alltokens[currentindex];
+			if(currentindex >= numtokens){
+				return pi;
+			}
+			currentindex++;
 		}
 	}
+	// add expression and expessionlist
 
-	if(strcmp(token.lx, "(") == 0){
-		pi = expression();
-
-		if(pi.er != none){
-			return pi;
-		}
-
-		token = GetNextToken();
-		if(!(strcmp(token.lx, ")") == 0)){
-			pi.er = closeParenExpected;
-			pi.tk = token;
-			return pi;
-		}
-	}
 	return pi;
 }
 
@@ -200,21 +139,19 @@ ParserInfo factor(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = PeekNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
-	if (strcmp(token.lx, "-") == 0 || strcmp(token.lx, "~") == 0)
+	if ((strcmp(token.lx, "-") == 0 || strcmp(token.lx, "~")) == 0 || strcmp(token.lx, "") == 0)
 	{
-		token = GetNextToken();
-		pi = operand();
-		if(pi.er != none){
-			return pi;
-		} 
+		operand();
 		
 	} else {
-		pi = operand();
-		if(pi.er != none){
-			return pi;
-		} 
+		pi.er = syntaxError;
+		pi.tk = token;
 	}
 
 	return pi;
@@ -223,14 +160,29 @@ ParserInfo factor(){
 // factor { ( * | / ) factor }
 ParserInfo term(){
 	ParserInfo pi = factor();
-	Token token;
 	
 	if(pi.er != none){
 		return pi;
 	}
-	
-	while((strcmp(PeekNextToken().lx, "*") == 0 || strcmp(PeekNextToken().lx, "/") == 0)){
-		token = GetNextToken();
+
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
+
+	if(!(strcmp(token.lx, "*") == 0 || strcmp(token.lx, "/") == 0)){
+		pi.er = syntaxError;
+		pi.tk = token;
+		return pi;
+	}
+
+	pi = factor();
+	if(pi.er != none){
+		return pi;
+	}
+
+	while((strcmp(token.lx, "*") == 0 || strcmp(token.lx, "/") == 0)){
 		pi = factor();
 		if(pi.er != none){
 			return pi;
@@ -243,13 +195,28 @@ ParserInfo term(){
 // term { ( + | - ) term }
 ParserInfo ArithmeticExpression(){
 	ParserInfo pi = term();
-	Token token;
 	if(pi.er != none){
 		return pi;
 	}
 
-	while((strcmp(PeekNextToken().lx, "+") == 0 || strcmp(PeekNextToken().lx, "-") == 0)){
-		token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
+
+	if(!(strcmp(token.lx, "+") == 0|| strcmp(token.lx, "-") == 0)){
+		pi.er = syntaxError;
+		pi.tk = token;
+		return pi;
+	}
+
+	pi = term();
+	if(pi.er != none){
+		return pi;
+	}
+
+	while((strcmp(token.lx, "+") == 0 || strcmp(token.lx, "-") == 0)){
 		pi = term();
 		if(pi.er != none){
 			return pi;
@@ -262,13 +229,28 @@ ParserInfo ArithmeticExpression(){
 // ArithmeticExpression { ( = | > | < ) ArithmeticExpression }
 ParserInfo relationalExpression(){
 	ParserInfo pi = ArithmeticExpression();
-	Token token;
 	if(pi.er != none){
 		return pi;
 	}
 
-	while((strcmp(PeekNextToken().lx, "=") == 0 || strcmp(PeekNextToken().lx, ">") == 0 || strcmp(PeekNextToken().lx, "<") == 0)){
-		token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
+
+	if(!(strcmp(token.lx, "=") == 0 || strcmp(token.lx, ">") == 0 || strcmp(token.lx, "<") == 0 )){
+		pi.er = syntaxError;
+		pi.tk = token;
+		return pi;
+	}
+
+	pi = ArithmeticExpression();
+	if(pi.er != none){
+		return pi;
+	}
+
+	while((strcmp(token.lx, "=") == 0 || strcmp(token.lx, ">") == 0 || strcmp(token.lx, "<") == 0)){
 		pi = ArithmeticExpression();
 		if(pi.er != none){
 			return pi;
@@ -281,13 +263,28 @@ ParserInfo relationalExpression(){
 // relationalExpression { ( & | | ) relationalExpression }
 ParserInfo expression(){
 	ParserInfo pi = relationalExpression();
-	Token token;
 	if(pi.er != none){
 		return pi;
 	}
 
-	while((strcmp(PeekNextToken().lx, "&") == 0 || strcmp(PeekNextToken().lx, "|") == 0)){
-		token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
+
+	if(!(strcmp(token.lx, "&") == 0 || strcmp(token.lx, "|") == 0)){
+		pi.er = syntaxError;
+		pi.tk = token;
+		return pi;
+	} 
+
+	pi = relationalExpression();
+	if(pi.er != none){
+		return pi;
+	}
+
+	while((strcmp(token.lx, "&") == 0 || strcmp(token.lx, "|") == 0)){
 		pi = relationalExpression();
 		if(pi.er != none){
 			return pi;
@@ -301,25 +298,23 @@ ParserInfo expression(){
 ParserInfo returnStatement(){
 	ParserInfo pi;
 	pi.er = none;
-	Token token = PeekNextToken();
+
+	if(alltokens[currentindex].ln == alltokens[currentindex - 1].ln){
+		pi = expression();
+		if(pi.er != none){
+			return pi;
+		}
+	}
+
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(strcmp(token.lx, ";") == 0){
-		GetNextToken();
 		return pi;
 	}
-
-	pi = expression();
-	if(pi.er != none){
-		pi.er = semicolonExpected;
-		return pi;
-	}
-
-	token = GetNextToken();
-
-	if(strcmp(token.lx, ";") == 0){
-		return pi;
-	}
-
 
 	pi.er = semicolonExpected;
 	pi.tk = token;
@@ -331,15 +326,15 @@ ParserInfo expressionList(){
 	ParserInfo pi;
 	pi.er = none;
 
-	if(strcmp(PeekNextToken().lx, ")") == 0){
+	if(strcmp(alltokens[currentindex].lx, "") == 0){
 		return pi;
 	} else{
 		pi = expression();
-		if(pi.er != none){
-			return pi;
-		}
-		while(strcmp(PeekNextToken().lx, ",") == 0){
-			GetNextToken();
+		while(strcmp(alltokens[currentindex].lx, ",") == 0){
+			if(currentindex >= numtokens){
+				return pi;
+			}
+			currentindex++;
 
 			pi = expression();
 			if(pi.er != none){
@@ -355,7 +350,11 @@ ParserInfo subroutineCall(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(token.tp != ID){
 		pi.er = idExpected;
@@ -363,16 +362,24 @@ ParserInfo subroutineCall(){
 		return pi;
 	}
 
-	/*if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+	if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
 		pi.er = undecIdentifier;
 		pi.tk = token;
 		return pi;
-	}*/
+	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(strcmp(token.lx, ".") == 0){
-		token = GetNextToken();
+		token = alltokens[currentindex];
+		if(currentindex >= numtokens){
+			return pi;
+		}
+		currentindex++;
 
 		if(token.tp != ID){
 			pi.er = idExpected;
@@ -380,16 +387,20 @@ ParserInfo subroutineCall(){
 			return pi;
 		}
 
-		/*if(isFunctionIdentifier(token.lx) == 0){
+		if(isFunctionIdentifier(token.lx) == 0){
 			pi.er = undecIdentifier;
 			pi.tk = token;
 			return pi;
-		}*/
+		}
 
-		token = GetNextToken();
+		token = alltokens[currentindex];
+		if(currentindex >= numtokens){
+			return pi;
+		}
+		currentindex++;
 	}
 
-	if(!(strcmp(token.lx, "(") == 0)){
+	if(!(strcmp(token.lx, "("))){
 		pi.er = openParenExpected;
 		pi.tk = token;
 		return pi;
@@ -400,9 +411,13 @@ ParserInfo subroutineCall(){
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
-	if(!(strcmp(token.lx, ")") == 0)){
+	if(!(strcmp(token.lx, ")"))){
 		pi.er = closeParenExpected;
 		pi.tk = token;
 		return pi;
@@ -422,9 +437,13 @@ ParserInfo doStatement(){
 	}
 
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
-	if(!(strcmp(token.lx, ";") == 0)){
+	if(!strcmp(token.lx, ";")){
 		pi.er = semicolonExpected;
 		pi.tk = token;
 	}
@@ -437,9 +456,13 @@ ParserInfo whileStatement(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
-	if(!(strcmp(token.lx, "(") == 0)){
+	if(!strcmp(token.lx, "(")){
 		pi.er = openParenExpected;
 		pi.tk = token;
 		return pi;
@@ -450,34 +473,36 @@ ParserInfo whileStatement(){
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
-	if(!(strcmp(token.lx, ")") == 0)){
+	if(!strcmp(token.lx, ")")){
 		pi.er = closeParenExpected;
 		pi.tk = token;
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
-	if(!(strcmp(token.lx, "{") == 0)){
+	if(!strcmp(token.lx, "{")){
 		pi.er = openBraceExpected;
 		pi.tk = token;
 		return pi;
 	}
 
-	while(!(strcmp(token.lx, "}") == 0)){
+	while(!strcmp(token.lx, "}")){
 		pi = statement();
 		if(pi.er != none){
 			return pi;
 		}	
-		token = PeekNextToken();
-	}
-
-	token = GetNextToken();
-	if(!(strcmp(token.lx, "}") == 0)){
-		pi.er = closeBraceExpected;
-		pi.tk = token;
+		token = alltokens[currentindex];
 	}
 
 	return pi;
@@ -488,7 +513,11 @@ ParserInfo ifStatement(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, "(") == 0)){
 		pi.er = openParenExpected;
@@ -501,7 +530,11 @@ ParserInfo ifStatement(){
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, ")") == 0)){
 		pi.er = closeParenExpected;
@@ -509,7 +542,11 @@ ParserInfo ifStatement(){
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, "{") == 0)){
 		pi.er = openBraceExpected;
@@ -520,16 +557,21 @@ ParserInfo ifStatement(){
 	while(!(strcmp(token.lx, "}") == 0)){
 		pi = statement();
 		if(pi.er != none){
-			pi.er = closeBraceExpected;
-			pi.tk = token;
 			return pi;
 		}	
-		token = PeekNextToken();
+		token = alltokens[currentindex];
 	}
-	GetNextToken();
-	token = PeekNextToken();
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
+
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 	if(strcmp(token.lx, "else")== 0){
-		GetNextToken();
 		pi = elseStatement();
 		if(pi.er != none){
 			return pi;
@@ -543,7 +585,12 @@ ParserInfo elseStatement(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
+
 	if(!(strcmp(token.lx, "{") == 0)){
 		pi.er = openBraceExpected;
 		pi.tk = token;
@@ -555,19 +602,17 @@ ParserInfo elseStatement(){
 		if(pi.er != none){
 			return pi;
 		}	
-		token = PeekNextToken();
+		token = alltokens[currentindex];
 	}
-	token = GetNextToken();
-
-	if(!(strcmp(token.lx, "}") == 0)){
-		pi.er = closeBraceExpected;
-		pi.tk = token;
+	if(currentindex >= numtokens){
+		return pi;
 	}
+	currentindex++;
 
 	return pi;
 }
 
-/*int isVarIdentifier(char* inputID){
+int isVarIdentifier(char* inputID){
 	for(int i = 0; i <= varIDIndex; i++){
 		if(strcmp(inputID, varIdentifiers[i]) == 0){
 			return 1;
@@ -583,14 +628,18 @@ int isFunctionIdentifier(char* inputID){
 		}
 	}
 	return 0;
-}*/
+}
 
 // let identifier [ [ expression ] ] = expression ;
 ParserInfo letStatement(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(token.tp != ID){
 		pi.er = idExpected;
@@ -598,27 +647,42 @@ ParserInfo letStatement(){
 		return pi;
 	}
 
-	/*if(isVarIdentifier(token.lx) == 0){
+	if(isVarIdentifier(token.lx) == 0){
 		pi.er = undecIdentifier;
 		pi.tk = token;
 		return pi;
-	}*/
+	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(strcmp(token.lx, "[") == 0){
 		pi = expression();
 		if(pi.er != none){
 			return pi;
 		}
-		token = GetNextToken();
-		if(!(strcmp(token.lx,"]") == 0)){
-			pi.er = closeBracketExpected;
-			pi.tk = token;
-			return pi;
-		}
-		token = GetNextToken();
 	}
+
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
+
+	if(!(strcmp(token.lx,"]") == 0)){
+		pi.er = closeBracketExpected;
+		pi.tk = token;
+		return pi;
+	}
+
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx,"=") == 0)){
 		pi.er = equalExpected;
@@ -626,37 +690,16 @@ ParserInfo letStatement(){
 		return pi;
 	}
 
-	/*if(strcmp(PeekNextToken().lx, "(") == 0){
-		GetNextToken();
-		pi = expression();
-		if(pi.er != none){
-			return pi;
-		}
-
-		token = GetNextToken();
-		if(!(strcmp(token.lx, ")") == 0)){
-			pi.er = closeParenExpected;
-			pi.tk = token;
-			return pi;
-		}
-
-		token = GetNextToken();
-
-		if(!(strcmp(token.lx,";") == 0)){
-			pi.er = semicolonExpected;
-			pi.tk = token;
-		}
-
-		return pi;
-	}*/
-	
-	
 	pi = expression();
 	if(pi.er != none){
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx,";") == 0)){
 		pi.er = semicolonExpected;
@@ -677,7 +720,11 @@ ParserInfo varDeclarStatement(){
 		return pi;
 	}
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(token.tp != ID){
 		pi.er = idExpected;
@@ -685,14 +732,21 @@ ParserInfo varDeclarStatement(){
 		return pi;
 	}
 
-	/*varIdentifiers[varIDIndex] = (char*)malloc(sizeof(token.lx));
 	strcpy(varIdentifiers[varIDIndex], token.lx);
-	varIDIndex++;*/
+	varIDIndex++;
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	while(strcmp(token.lx, ",") == 0){
-		token = GetNextToken();
+		token = alltokens[currentindex];
+		if(currentindex >= numtokens){
+			return pi;
+		}
+		currentindex++;
 
 		if(token.tp != ID){
 			pi.er = idExpected;
@@ -700,11 +754,14 @@ ParserInfo varDeclarStatement(){
 			return pi;
 		}
 
-		/*varIdentifiers[varIDIndex] = (char*)malloc(sizeof(token.lx));
 		strcpy(varIdentifiers[varIDIndex], token.lx);
-		varIDIndex++;*/
+		varIDIndex++;
 
-		token = GetNextToken();
+		token = alltokens[currentindex];
+		if(currentindex >= numtokens){
+			return pi;
+		}
+		currentindex++;
 	}
 
 	if(!(strcmp(token.lx, ";") == 0)){
@@ -721,7 +778,11 @@ ParserInfo statement(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(strcmp(token.lx, "var") == 0){
 		pi = varDeclarStatement();
@@ -748,26 +809,29 @@ ParserInfo subroutineBody(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
-	if(!(strcmp(token.lx, "{") == 0)){
+	if(!(strcmp(token.lx, "{"))){
 		pi.er = openBraceExpected;
 		pi.tk = token;
 		return pi;
 	}
 
-	while(!(strcmp(PeekNextToken().lx, "}") == 0)){
+	while(!(strcmp(alltokens[currentindex].lx, "}"))){
 		pi = statement();
 		if(pi.er != none){
 			return pi;
 		}
 	}
 
-	token = GetNextToken();
-	if(!(strcmp(token.lx, "}") == 0)){
-		pi.er = closeBraceExpected;
-		pi.tk = token;
+	if(currentindex >= numtokens){
+		return pi;
 	}
+	currentindex++;
 
 	return pi;
 }
@@ -777,8 +841,8 @@ ParserInfo paramList(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = PeekNextToken();
-	if(strcmp(token.lx, "{") == 0 || strcmp(token.lx, ")") == 0){
+	Token token = alltokens[currentindex];
+	if(strcmp(token.lx, "") == 0){
 		return pi;
 	}
 
@@ -787,7 +851,11 @@ ParserInfo paramList(){
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(token.tp != ID){
 		pi.er = idExpected;
@@ -795,14 +863,18 @@ ParserInfo paramList(){
 		return pi;
 	}
 
-	while(strcmp(PeekNextToken().lx, ",") == 0){
-		GetNextToken();
+	if(strcmp(alltokens[currentindex].lx, ",")){
+		currentindex++;
 		pi = type();
 		if(pi.er != none){
 			return pi;
 		}
 
-		token = GetNextToken();
+		token = alltokens[currentindex];
+		if(currentindex >= numtokens){
+			return pi;
+		}
+		currentindex++;
 
 		if(token.tp != ID){
 			pi.er = idExpected;
@@ -818,7 +890,11 @@ ParserInfo subroutineDeclar(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, "constructor") == 0 || strcmp(token.lx, "function") == 0 || strcmp(token.lx, "method") == 0)){
 		pi.er = subroutineDeclarErr;
@@ -826,34 +902,39 @@ ParserInfo subroutineDeclar(){
 		return pi;
 	}
 
-	token = PeekNextToken();
+	token = alltokens[currentindex];
 	if(!(strcmp(token.lx, "void") == 0)){
 		pi = type();
 		if(pi.er != none){
 			return pi;
 		}
-	} else {
-		GetNextToken();
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(token.tp != ID){
 		pi.er = idExpected;
 		pi.tk = token;
 		return pi;
 	} else {
-		/*if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+		if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
 			pi.er = redecIdentifier;
 			pi.tk = token;
 			return pi;
 		}
-		functionIdentifiers[functionIDIndex] = (char*)malloc(sizeof(token.lx));
 		strcpy(functionIdentifiers[functionIDIndex], token.lx);
-		functionIDIndex++;*/
+		functionIDIndex++;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, "(") == 0)){
 		pi.er = openParenExpected;
@@ -862,17 +943,18 @@ ParserInfo subroutineDeclar(){
 	}
 
 	pi = paramList();
-	if(pi.er != none){
+
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
 		return pi;
 	}
+	currentindex++;
 
-	token = GetNextToken();
 	if(!(strcmp(token.lx, ")") == 0)){
 		pi.er = closeParenExpected;
 		pi.tk = token;
 		return pi;
 	}
-
 
 	pi = subroutineBody();
 	if(pi.er != none){
@@ -888,14 +970,18 @@ ParserInfo type(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 	
 	if(token.tp == ID){
-		/*if(isVarIdentifier(token.lx) == 0 && isFunctionIdentifier(token.lx) == 0){
+		if(isVarIdentifier(token.lx) == 0 && isFunctionIdentifier(token.lx) == 0){
 			pi.er = undecIdentifier;
 			pi.tk = token;
 			return pi;
-		}*/
+		}
 	
 	}
 
@@ -912,7 +998,11 @@ ParserInfo classVarDeclar(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, "static") == 0 || strcmp(token.lx, "field") == 0)){
 		pi.er = classVarErr;
@@ -925,7 +1015,11 @@ ParserInfo classVarDeclar(){
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(token.tp != ID){
 		pi.er = idExpected;
@@ -933,19 +1027,22 @@ ParserInfo classVarDeclar(){
 		return pi;
 	}
 
-	/*if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+	if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
 		pi.er = redecIdentifier;
 		pi.tk = token;
 		return pi;
 	}
 
-	varIdentifiers[varIDIndex] = (char*)malloc(sizeof(token.lx));
 	strcpy(varIdentifiers[varIDIndex], token.lx);
-	varIDIndex++;*/
+	varIDIndex++;
 
-	while(strcmp(PeekNextToken().lx, ",") == 0){
-		GetNextToken();
-		token = GetNextToken();
+	while(strcmp(alltokens[currentindex].lx, ",")){
+		currentindex++;
+		token = alltokens[currentindex];
+		if(currentindex >= numtokens){
+			return pi;
+		}
+		currentindex++;
 
 		if(token.tp != ID){
 			pi.er = idExpected;
@@ -953,18 +1050,21 @@ ParserInfo classVarDeclar(){
 			return pi;
 		}
 
-		/*if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+		if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
 			pi.er = redecIdentifier;
 			pi.tk = token;
 			return pi;
 		}
 
-		varIdentifiers[varIDIndex] = (char*)malloc(sizeof(token.lx));
 		strcpy(varIdentifiers[varIDIndex], token.lx);
-		varIDIndex++;*/
+		varIDIndex++;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, ";") == 0)){
 		pi.er = semicolonExpected;
@@ -981,20 +1081,15 @@ ParserInfo memberDeclar(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = PeekNextToken();
+	Token token = alltokens[currentindex];
 
-	while(pi.er == none){
-		token = PeekNextToken();
-		if(strcmp(token.lx, "static") == 0 || strcmp(token.lx, "field") == 0){
-			pi = classVarDeclar();
-		} else if(strcmp(token.lx, "constructor") == 0 || strcmp(token.lx, "function") == 0 || strcmp(token.lx, "method") == 0){
-			pi = subroutineDeclar();
-		} else if(strcmp(token.lx, "}") == 0 ){
-			break;
-		} else {
-			pi.er = memberDeclarErr;
-			pi.tk = token;
-		}
+	if(strcmp(token.lx, "static") == 0 || strcmp(token.lx, "field") == 0){
+		pi = classVarDeclar();
+	} else if(strcmp(token.lx, "constructor") == 0 || strcmp(token.lx, "function") == 0 || strcmp(token.lx, "method") == 0){
+		pi = subroutineDeclar();
+	} else {
+		pi.er = memberDeclarErr;
+		pi.tk = token;
 	}
 
 	return pi;
@@ -1005,7 +1100,11 @@ ParserInfo class(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = GetNextToken();
+	Token token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, "class") == 0)){
 		pi.er = classExpected;
@@ -1013,19 +1112,26 @@ ParserInfo class(){
 		return pi;
 	}
 
-	token = GetNextToken();
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(token.tp != ID){
 		pi.er = idExpected;
 		pi.tk = token;
 		return pi;
 	}
-	
-	/*functionIdentifiers[functionIDIndex] = (char*)malloc(sizeof(token.lx));
-	strcpy(functionIdentifiers[functionIDIndex], token.lx);
-	functionIDIndex++;*/
 
-	token = GetNextToken();
+	strcpy(functionIdentifiers[functionIDIndex], token.lx);
+	functionIDIndex++;
+
+	token = alltokens[currentindex];
+	if(currentindex >= numtokens){
+		return pi;
+	}
+	currentindex++;
 
 	if(!(strcmp(token.lx, "{") == 0)){
 		pi.er = openBraceExpected;
@@ -1038,8 +1144,8 @@ ParserInfo class(){
 		return pi;
 	}
 
-	token = GetNextToken();
-	if(!(strcmp(token.lx, "}") == 0)){
+	token = alltokens[currentindex];
+	if(!(strcmp(token.lx, "}"))){
 		pi.er = closeBraceExpected;
 		pi.tk = token;
 		return pi;
@@ -1052,25 +1158,36 @@ ParserInfo class(){
 int InitParser (char* file_name)
 {
 	InitLexer(file_name);
+	numtokens = 1;
+
+    // get the number of tokens
+	Token token = GetNextToken();
+    while(token.tp != EOFile && token.tp != ERR){
+        numtokens++;
+		token = GetNextToken();
+    }
+
+	StopLexer();
+
+	alltokens = malloc((numtokens+1) * sizeof(Token));
+
+	InitLexer(file_name);
+
+	for(int i = 0; i < numtokens; i++){
+		alltokens[i] = GetNextToken();
+	}
+	
+	StopLexer();
 
 	return 1;
 }
 
 ParserInfo Parse ()
 {
-	ParserInfo pi;
-
-	Token token = GetNextToken();
-	while(token.tp != EOFile){
-		if(token.tp == ERR){
-			pi.er = lexerErr;
-			pi.tk = token;
-			return pi;
-		}
-		token = GetNextToken();
-	}
-
+	Token token = PeekNextToken();
 	InitParser(token.fl);
+
+	ParserInfo pi;
 
 	pi = class();
 
@@ -1080,18 +1197,15 @@ ParserInfo Parse ()
 
 int StopParser ()
 {
-	//free(varIdentifiers);
-	//free(functionIdentifiers);
-
+	free(alltokens);
 	return 1;
 }
 
 #ifndef TEST_PARSER
 int main ()
 {
-	InitParser("semicolonExpected.jack");
-	ParserInfo pi = Parse();
-	ShowInfo(pi);
+	InitLexer("closeParenExpected.jack");
+	Parse();
 	return 1;
 }
 #endif

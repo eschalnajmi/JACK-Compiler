@@ -33,62 +33,6 @@ ParserInfo class();
 int isVarIdentifier(char* inputID);
 int isFunctionIdentifier(char* inputID);
 
-/*char* TokenTypeString (TokenType t)
-{
-	switch (t)
-	{
-		case RESWORD: return "RESWORD";
-		case ID: return "ID";
-		case INT: return "INT";
-		case SYMBOL: return "SYMBOL";
-		case STRING: return "STRING";
-		case EOFile: return "EOFile";
-		case ERR: return "ERR";
-		default: return "Not a recognised token type";
-	}
-
-}
-
-char* ErrorString (SyntaxErrors e)
-{
-
-	switch (e)
-	{
-		case none: return "no errors";
-		case lexerErr: return "lexer error";
-		case classExpected: return "keyword class expected";
-		case idExpected: return "identifier expected";
-		case openBraceExpected:	return "{ expected";
-		case closeBraceExpected: return "} expected";
-		case memberDeclarErr: return "class member declaration must begin with static, field, constructor , function , or method";
-		case classVarErr: return "class variables must begin with field or static";
-		case illegalType: return "a type must be int, char, boolean, or identifier";
-		case semicolonExpected: return "; expected";
-		case subroutineDeclarErr: return "subrouting declaration must begin with constructor, function, or method";
-		case openParenExpected: return "( expected";
-		case closeParenExpected: return ") expected";
-		case closeBracketExpected: return "] expected";
-		case equalExpected: return "= expected";
-		case syntaxError: return "syntax error";
-		default: return "not a valid error code";
-	}
-}
-
-void ShowInfo (ParserInfo pn)
-{
-	if (pn.er == none)
-		printf ("none\n");
-	else
-		printf ("error type: %s, line: %i,token: %s, \n" , ErrorString(pn.er),  pn.tk.ln , pn.tk.lx  );
-}
-
-
-void PrintToken (Token t)
-{
-	printf ("<%s, %i, %s, %s>\n", t.fl, t.ln , t.lx, TokenTypeString (t.tp));
-}*/
-
-
 int numtokens;
 int currentindex = 0;
 /*char* varIdentifiers[500];
@@ -106,7 +50,36 @@ ParserInfo operand(){
 
 	Token token =  GetNextToken();
 
-	if(!(strcmp(token.lx, "true") == 0 || strcmp(token.lx, "false") == 0 || strcmp(token.lx, "null") == 0 || strcmp(token.lx, "this") == 0 || token.tp == STRING || token.tp == INT || token.tp == ID || strcmp(token.lx, "(") == 0)){
+	if(strcmp(token.lx, "[") == 0){
+		pi = expression();
+		if(pi.er != none){
+			return pi;
+		}
+
+		token = GetNextToken();
+		
+		if(!(strcmp(token.lx, "]") == 0)){
+			pi.er = closeBracketExpected;
+			pi.tk = token;
+			return pi;
+		}
+	}
+
+	if(strcmp(token.lx, "(") == 0){
+		if(strcmp(PeekNextToken().lx,",") == 0){
+			pi = expressionList();
+		} else{
+			pi = expression();
+		}
+
+		if(pi.er != none){
+			return pi;
+		}
+
+		token = GetNextToken();
+	}
+
+	if(!(strcmp(token.lx, "true") == 0 || strcmp(token.lx, "false") == 0 || strcmp(token.lx, "null") == 0 || strcmp(token.lx, "this") == 0 || token.tp == STRING || token.tp == INT || token.tp == ID)){
 		pi.er = syntaxError;
 		pi.tk = token;
 		return pi;
@@ -119,8 +92,7 @@ ParserInfo operand(){
 			return pi;
 		}*/
 
-		token = PeekNextToken();
-		if(strcmp(token.lx, ".") == 0){
+		if(strcmp(PeekNextToken().lx, ".") == 0){
 			token = GetNextToken();
 			token = GetNextToken();
 
@@ -130,68 +102,16 @@ ParserInfo operand(){
 				return pi;
 			}
 
-			token = PeekNextToken();
-
-			if(strcmp(token.lx, "[") == 0){
-				GetNextToken();
-				pi = expression();
-				if(pi.er != none){
-					return pi;
-				}
-
-				token = GetNextToken();
-				
-				if(!(strcmp(token.lx, "]") == 0)){
-					pi.er = closeBracketExpected;
-					pi.tk = token;
-					return pi;
-				}
-			} else if(strcmp(token.lx, "(") == 0){
-				token = GetNextToken();
-				pi = expressionList();
-
-				if(pi.er != none){
-					return pi;
-				}
-
-				token = GetNextToken();
-				if(!(strcmp(token.lx, ")") == 0)){
-					pi.er = closeParenExpected;
-					pi.tk = token;
-					return pi;
-				}
-			}
-		} else if(strcmp(token.lx, "[") == 0){
-			token = GetNextToken();
-			pi = expression();
-
-			if(pi.er != none){
-				return pi;
-			}
-
-			token = GetNextToken();
-			if(!(strcmp(token.lx, "]") == 0)){
-				pi.er = closeBracketExpected;
+			/*if(isFunctionIdentifier(token.lx) == 0){
+				pi.er = undecIdentifier;
 				pi.tk = token;
 				return pi;
-			}
+			}*/
+
+			token = GetNextToken();
 		}
 	}
 
-	if(strcmp(token.lx, "(") == 0){
-		pi = expression();
-
-		if(pi.er != none){
-			return pi;
-		}
-
-		token = GetNextToken();
-		if(!(strcmp(token.lx, ")") == 0)){
-			pi.er = closeParenExpected;
-			pi.tk = token;
-			return pi;
-		}
-	}
 	return pi;
 }
 
@@ -200,21 +120,15 @@ ParserInfo factor(){
 	ParserInfo pi;
 	pi.er = none;
 
-	Token token = PeekNextToken();
+	Token token = GetNextToken();
 
-	if (strcmp(token.lx, "-") == 0 || strcmp(token.lx, "~") == 0)
+	if ((strcmp(token.lx, "-") == 0 || strcmp(token.lx, "~")) == 0 || strcmp(token.lx, "") == 0)
 	{
-		token = GetNextToken();
 		pi = operand();
-		if(pi.er != none){
-			return pi;
-		} 
 		
 	} else {
-		pi = operand();
-		if(pi.er != none){
-			return pi;
-		} 
+		pi.er = syntaxError;
+		pi.tk = token;
 	}
 
 	return pi;
@@ -223,12 +137,24 @@ ParserInfo factor(){
 // factor { ( * | / ) factor }
 ParserInfo term(){
 	ParserInfo pi = factor();
-	Token token;
 	
 	if(pi.er != none){
 		return pi;
 	}
-	
+
+	Token token = GetNextToken();
+
+	if(!(strcmp(token.lx, "*") == 0 || strcmp(token.lx, "/") == 0)){
+		pi.er = syntaxError;
+		pi.tk = token;
+		return pi;
+	}
+
+	pi = factor();
+	if(pi.er != none){
+		return pi;
+	}
+
 	while((strcmp(PeekNextToken().lx, "*") == 0 || strcmp(PeekNextToken().lx, "/") == 0)){
 		token = GetNextToken();
 		pi = factor();
@@ -243,7 +169,19 @@ ParserInfo term(){
 // term { ( + | - ) term }
 ParserInfo ArithmeticExpression(){
 	ParserInfo pi = term();
-	Token token;
+	if(pi.er != none){
+		return pi;
+	}
+
+	Token token = GetNextToken();
+
+	if(!(strcmp(token.lx, "+") == 0|| strcmp(token.lx, "-") == 0)){
+		pi.er = syntaxError;
+		pi.tk = token;
+		return pi;
+	}
+
+	pi = term();
 	if(pi.er != none){
 		return pi;
 	}
@@ -262,7 +200,19 @@ ParserInfo ArithmeticExpression(){
 // ArithmeticExpression { ( = | > | < ) ArithmeticExpression }
 ParserInfo relationalExpression(){
 	ParserInfo pi = ArithmeticExpression();
-	Token token;
+	if(pi.er != none){
+		return pi;
+	}
+
+	Token token = GetNextToken();
+
+	if(!(strcmp(token.lx, "=") == 0 || strcmp(token.lx, ">") == 0 || strcmp(token.lx, "<") == 0 )){
+		pi.er = syntaxError;
+		pi.tk = token;
+		return pi;
+	}
+
+	pi = ArithmeticExpression();
 	if(pi.er != none){
 		return pi;
 	}
@@ -281,7 +231,19 @@ ParserInfo relationalExpression(){
 // relationalExpression { ( & | | ) relationalExpression }
 ParserInfo expression(){
 	ParserInfo pi = relationalExpression();
-	Token token;
+	if(pi.er != none){
+		return pi;
+	}
+
+	Token token = GetNextToken();
+
+	if(!(strcmp(token.lx, "&") == 0 || strcmp(token.lx, "|") == 0)){
+		pi.er = syntaxError;
+		pi.tk = token;
+		return pi;
+	} 
+
+	pi = relationalExpression();
 	if(pi.er != none){
 		return pi;
 	}
@@ -301,25 +263,17 @@ ParserInfo expression(){
 ParserInfo returnStatement(){
 	ParserInfo pi;
 	pi.er = none;
-	Token token = PeekNextToken();
-
-	if(strcmp(token.lx, ";") == 0){
-		GetNextToken();
-		return pi;
-	}
 
 	pi = expression();
 	if(pi.er != none){
-		pi.er = semicolonExpected;
 		return pi;
 	}
 
-	token = GetNextToken();
+	Token token = GetNextToken();
 
 	if(strcmp(token.lx, ";") == 0){
 		return pi;
 	}
-
 
 	pi.er = semicolonExpected;
 	pi.tk = token;
@@ -331,13 +285,10 @@ ParserInfo expressionList(){
 	ParserInfo pi;
 	pi.er = none;
 
-	if(strcmp(PeekNextToken().lx, ")") == 0){
+	if(strcmp(PeekNextToken().lx, "") == 0){
 		return pi;
 	} else{
 		pi = expression();
-		if(pi.er != none){
-			return pi;
-		}
 		while(strcmp(PeekNextToken().lx, ",") == 0){
 			GetNextToken();
 
@@ -389,7 +340,7 @@ ParserInfo subroutineCall(){
 		token = GetNextToken();
 	}
 
-	if(!(strcmp(token.lx, "(") == 0)){
+	if(!(strcmp(token.lx, "("))){
 		pi.er = openParenExpected;
 		pi.tk = token;
 		return pi;
@@ -402,7 +353,7 @@ ParserInfo subroutineCall(){
 
 	token = GetNextToken();
 
-	if(!(strcmp(token.lx, ")") == 0)){
+	if(!(strcmp(token.lx, ")"))){
 		pi.er = closeParenExpected;
 		pi.tk = token;
 		return pi;
@@ -424,7 +375,7 @@ ParserInfo doStatement(){
 
 	Token token = GetNextToken();
 
-	if(!(strcmp(token.lx, ";") == 0)){
+	if(!strcmp(token.lx, ";")){
 		pi.er = semicolonExpected;
 		pi.tk = token;
 	}
@@ -439,7 +390,7 @@ ParserInfo whileStatement(){
 
 	Token token = GetNextToken();
 
-	if(!(strcmp(token.lx, "(") == 0)){
+	if(!strcmp(token.lx, "(")){
 		pi.er = openParenExpected;
 		pi.tk = token;
 		return pi;
@@ -452,7 +403,7 @@ ParserInfo whileStatement(){
 
 	token = GetNextToken();
 
-	if(!(strcmp(token.lx, ")") == 0)){
+	if(!strcmp(token.lx, ")")){
 		pi.er = closeParenExpected;
 		pi.tk = token;
 		return pi;
@@ -460,24 +411,19 @@ ParserInfo whileStatement(){
 
 	token = GetNextToken();
 
-	if(!(strcmp(token.lx, "{") == 0)){
+	if(!strcmp(token.lx, "{")){
 		pi.er = openBraceExpected;
 		pi.tk = token;
 		return pi;
 	}
 
-	while(!(strcmp(token.lx, "}") == 0)){
+	while(!strcmp(token.lx, "}")){
+		GetNextToken();
 		pi = statement();
 		if(pi.er != none){
 			return pi;
 		}	
 		token = PeekNextToken();
-	}
-
-	token = GetNextToken();
-	if(!(strcmp(token.lx, "}") == 0)){
-		pi.er = closeBraceExpected;
-		pi.tk = token;
 	}
 
 	return pi;
@@ -527,9 +473,9 @@ ParserInfo ifStatement(){
 		token = PeekNextToken();
 	}
 	GetNextToken();
-	token = PeekNextToken();
+	token = GetNextToken();
+	currentindex++;
 	if(strcmp(token.lx, "else")== 0){
-		GetNextToken();
 		pi = elseStatement();
 		if(pi.er != none){
 			return pi;
@@ -553,16 +499,16 @@ ParserInfo elseStatement(){
 	while(!(strcmp(token.lx, "}") == 0)){
 		pi = statement();
 		if(pi.er != none){
+			pi.er = closeBraceExpected;
+			pi.tk = token;
 			return pi;
 		}	
 		token = PeekNextToken();
 	}
-	token = GetNextToken();
-
-	if(!(strcmp(token.lx, "}") == 0)){
-		pi.er = closeBraceExpected;
-		pi.tk = token;
+	if(currentindex >= numtokens){
+		return pi;
 	}
+	currentindex++;
 
 	return pi;
 }
@@ -611,14 +557,17 @@ ParserInfo letStatement(){
 		if(pi.er != none){
 			return pi;
 		}
-		token = GetNextToken();
-		if(!(strcmp(token.lx,"]") == 0)){
-			pi.er = closeBracketExpected;
-			pi.tk = token;
-			return pi;
-		}
-		token = GetNextToken();
 	}
+
+	token = GetNextToken();
+
+	if(!(strcmp(token.lx,"]") == 0)){
+		pi.er = closeBracketExpected;
+		pi.tk = token;
+		return pi;
+	}
+
+	token = GetNextToken();
 
 	if(!(strcmp(token.lx,"=") == 0)){
 		pi.er = equalExpected;
@@ -626,31 +575,6 @@ ParserInfo letStatement(){
 		return pi;
 	}
 
-	/*if(strcmp(PeekNextToken().lx, "(") == 0){
-		GetNextToken();
-		pi = expression();
-		if(pi.er != none){
-			return pi;
-		}
-
-		token = GetNextToken();
-		if(!(strcmp(token.lx, ")") == 0)){
-			pi.er = closeParenExpected;
-			pi.tk = token;
-			return pi;
-		}
-
-		token = GetNextToken();
-
-		if(!(strcmp(token.lx,";") == 0)){
-			pi.er = semicolonExpected;
-			pi.tk = token;
-		}
-
-		return pi;
-	}*/
-	
-	
 	pi = expression();
 	if(pi.er != none){
 		return pi;
@@ -750,24 +674,23 @@ ParserInfo subroutineBody(){
 
 	Token token = GetNextToken();
 
-	if(!(strcmp(token.lx, "{") == 0)){
+	if(!(strcmp(token.lx, "{"))){
 		pi.er = openBraceExpected;
 		pi.tk = token;
 		return pi;
 	}
 
-	while(!(strcmp(PeekNextToken().lx, "}") == 0)){
+	while(!(strcmp(PeekNextToken().lx, "}"))){
+		GetNextToken();
 		pi = statement();
 		if(pi.er != none){
+			pi.er = closeBraceExpected;
+			pi.tk = token;
 			return pi;
 		}
 	}
 
-	token = GetNextToken();
-	if(!(strcmp(token.lx, "}") == 0)){
-		pi.er = closeBraceExpected;
-		pi.tk = token;
-	}
+	GetNextToken();
 
 	return pi;
 }
@@ -778,7 +701,7 @@ ParserInfo paramList(){
 	pi.er = none;
 
 	Token token = PeekNextToken();
-	if(strcmp(token.lx, "{") == 0 || strcmp(token.lx, ")") == 0){
+	if(strcmp(token.lx, "") == 0){
 		return pi;
 	}
 
@@ -795,7 +718,7 @@ ParserInfo paramList(){
 		return pi;
 	}
 
-	while(strcmp(PeekNextToken().lx, ",") == 0){
+	if(strcmp(PeekNextToken().lx, ",")){
 		GetNextToken();
 		pi = type();
 		if(pi.er != none){
@@ -832,8 +755,6 @@ ParserInfo subroutineDeclar(){
 		if(pi.er != none){
 			return pi;
 		}
-	} else {
-		GetNextToken();
 	}
 
 	token = GetNextToken();
@@ -867,12 +788,12 @@ ParserInfo subroutineDeclar(){
 	}
 
 	token = GetNextToken();
+
 	if(!(strcmp(token.lx, ")") == 0)){
 		pi.er = closeParenExpected;
 		pi.tk = token;
 		return pi;
 	}
-
 
 	pi = subroutineBody();
 	if(pi.er != none){
@@ -943,7 +864,7 @@ ParserInfo classVarDeclar(){
 	strcpy(varIdentifiers[varIDIndex], token.lx);
 	varIDIndex++;*/
 
-	while(strcmp(PeekNextToken().lx, ",") == 0){
+	while(strcmp(PeekNextToken().lx, ",")){
 		GetNextToken();
 		token = GetNextToken();
 
@@ -983,18 +904,13 @@ ParserInfo memberDeclar(){
 
 	Token token = PeekNextToken();
 
-	while(pi.er == none){
-		token = PeekNextToken();
-		if(strcmp(token.lx, "static") == 0 || strcmp(token.lx, "field") == 0){
-			pi = classVarDeclar();
-		} else if(strcmp(token.lx, "constructor") == 0 || strcmp(token.lx, "function") == 0 || strcmp(token.lx, "method") == 0){
-			pi = subroutineDeclar();
-		} else if(strcmp(token.lx, "}") == 0 ){
-			break;
-		} else {
-			pi.er = memberDeclarErr;
-			pi.tk = token;
-		}
+	if(strcmp(token.lx, "static") == 0 || strcmp(token.lx, "field") == 0){
+		pi = classVarDeclar();
+	} else if(strcmp(token.lx, "constructor") == 0 || strcmp(token.lx, "function") == 0 || strcmp(token.lx, "method") == 0){
+		pi = subroutineDeclar();
+	} else {
+		pi.er = memberDeclarErr;
+		pi.tk = token;
 	}
 
 	return pi;
@@ -1039,7 +955,7 @@ ParserInfo class(){
 	}
 
 	token = GetNextToken();
-	if(!(strcmp(token.lx, "}") == 0)){
+	if(!(strcmp(token.lx, "}"))){
 		pi.er = closeBraceExpected;
 		pi.tk = token;
 		return pi;
@@ -1060,18 +976,6 @@ ParserInfo Parse ()
 {
 	ParserInfo pi;
 
-	Token token = GetNextToken();
-	while(token.tp != EOFile){
-		if(token.tp == ERR){
-			pi.er = lexerErr;
-			pi.tk = token;
-			return pi;
-		}
-		token = GetNextToken();
-	}
-
-	InitParser(token.fl);
-
 	pi = class();
 
 	return pi;
@@ -1086,12 +990,11 @@ int StopParser ()
 	return 1;
 }
 
-#ifndef TEST_PARSER
+/*#ifndef TEST_PARSER
 int main ()
 {
-	InitParser("semicolonExpected.jack");
-	ParserInfo pi = Parse();
-	ShowInfo(pi);
+	InitParser("closeParenExpected.jack");
+	Parse();
 	return 1;
 }
-#endif
+#endif*/
