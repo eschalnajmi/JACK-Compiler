@@ -207,7 +207,7 @@ int t_parser ()
 }
 
 
-#ifdef TEST_PARSER
+#ifndef TEST_PARSER
 int main (int argc, char* argv[])
 {
 	FILE* jsonFile;
