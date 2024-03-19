@@ -33,7 +33,6 @@ ParserInfo class();
 
 int numtokens;
 
-
 // [] 0 or 1
 // {} 0 or many
 // integerConstant | identifier [.identifier ] [ [ expression ] | (expressionList ) ] | (expression) | stringLiteral | true | false | null | this

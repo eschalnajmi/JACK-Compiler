@@ -1,66 +1,69 @@
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "lexer.h"
 #include "parser.h"
+#include "compiler.h"
 
 #define JsonStrSize 5000
 #define Presubmission 1
 
 // remove this before releasing template
 #define NumberTestFiles 20
-
 char* JsonStr;
 
-Token tokenArray[2024];
-int numberTokens;
+char* ErrorString (SyntaxErrors e);
+void PrintError (ParserInfo pn);
+
+
+//Token tokenArray[2024];
+//int numberTokens;
 
 char* testFiles[NumberTestFiles] = {
-	"Main.jack",
-	"Ball.jack" ,
-	"Fraction.jack",
-	"List.jack",
-	"Square.jack" ,
-	"SquareGame.jack",
-	"classExpected.jack" ,
-	"closeBracketExpected.jack",
-	"closeParenExpected.jack",
-	"closeParenExpected1.jack",
-	"equalExpected.jack",
-	"idExpected.jack",
-	"idExpected2.jack",
-	"openBraceExpected.jack",
-	"openParenExpected.jack",
-	"semicolonExpected.jack",
-	"syntaxError.jack",
-	"syntaxError1.jack",
-	"syntaxError2.jack",
-	"NewLineInStr.jack",
+	"UNDECLAR_VAR",
+	"REDECLAR_VAR" ,
+	"UNDECLAR_SUB",
+	"DECLARED_SUB",
+	"DECLARED_VAR" ,
+	"DECLAR_EXT_FUN",
+	"UNDECLAR_EXT_FUN",
+	"UNDECLAR_EXT_METH",
+	"DECLAR_EXT_METH",
+	"UNDECLAR_CLASS",
+	"USES_MATH_LIB",
+	"ERR_MATH_LIB",
+	"Pong",
+	"Square",
+	"StringTest",
+	"Square1",
+	"Square2",
+	"Square3",
+	"ComplexArrays",
+	"Pong1",
 };
 
 ParserInfo correctInfo [NumberTestFiles] = {
+	{undecIdentifier, {ID, "t" , NoLexErr, 8} },
+	{redecIdentifier, {ID , "v" , NoLexErr , 5} } ,
+	{undecIdentifier, {ID , "Sub" , NoLexErr , 11} },
 	{none},
 	{none},
 	{none},
+	{undecIdentifier, {ID , "N" , NoLexErr , 7} },
+	{undecIdentifier, {ID , "N" , NoLexErr , 9} },
+	{none},
+	{undecIdentifier, {ID , "T" , NoLexErr , 4} },
+	{none},
+	{undecIdentifier, {ID , "mult" , NoLexErr , 8} },
 	{none},
 	{none},
 	{none},
-	{classExpected , {ID , "clas" , NoLexErr , 7} } ,
-	{closeBracketExpected , {SYMBOL , ";" , NoLexErr , 19} } ,
-	{closeParenExpected , {SYMBOL , "{" , NoLexErr , 19} } ,
-	{closeParenExpected , {SYMBOL , ";" , NoLexErr , 43} } ,
-	{equalExpected , {INT , "0" , NoLexErr , 27} } ,
-	{idExpected , {SYMBOL , "{" , NoLexErr , 11} } ,
-	{idExpected , {SYMBOL , "." , NoLexErr , 59} } ,
-	{openBraceExpected , {RESWORD , "field" , NoLexErr , 8} } ,
-	{openParenExpected , {RESWORD , "false" , NoLexErr , 52} } ,
-	{semicolonExpected , {SYMBOL , "}" , NoLexErr , 27} } ,
-	{closeParenExpected , {ID , "dx" , NoLexErr , 96} } ,
-	{syntaxError , {SYMBOL , ";" , NoLexErr , 61} } ,
-	{semicolonExpected , {SYMBOL , ")" , NoLexErr , 91} } ,
-	{lexerErr, {ERR , "" , NewLnInStr , 1} }
+	{undecIdentifier, {ID , "nev" , NoLexErr , 12} },
+	{undecIdentifier, {ID , "moveRigh" , NoLexErr , 45} },
+	{undecIdentifier, {ID , "squar" , NoLexErr , 35} },
+	{none},
+	{undecIdentifier, {ID , "bas" , NoLexErr , 26} },
 };
 
 int InitGraderString ()
@@ -68,6 +71,7 @@ int InitGraderString ()
 	JsonStr = (char *) malloc (sizeof (char) * JsonStrSize);
 	strcpy (JsonStr, "{\n");   // let's start, bismillah
 	strcat (JsonStr, "\t\"output\": \"Graded by CAutoGrader\",\n");
+	strcat (JsonStr, "\t\"std_visibility\": \"visible\",\n");
 	strcat (JsonStr, "\t\"tests\":\n");  // let's start the tests
 	strcat (JsonStr, "\t[\n");
 	return 1;
@@ -147,9 +151,21 @@ char* ErrorString (SyntaxErrors e)
 		case closeBracketExpected: return "] expected";
 		case equalExpected: return "= expected";
 		case syntaxError: return "syntax error";
+		// semantic errors
+		case undecIdentifier: return "undeclared identifier";
+		case redecIdentifier: return "redeclaration of identifier";
 		default: return "not a valid error code";
 	}
 }
+
+void PrintError (ParserInfo pn)
+{
+	if (pn.er == none)
+		printf ("No errors\n");
+	else
+		printf ("Error in file %s line %i at or near %s: %s\n" , pn.tk.fl , pn.tk.ln , pn.tk.lx , ErrorString(pn.er));
+}
+
 
 void ShowInfo (ParserInfo pn)
 {
@@ -167,28 +183,29 @@ void PrintToken (Token t)
 
 
 // test the parser
-int t_parser ()
+int t_compiler ()
 {
 	int m=20;
 	char s[100];
 	int fail = 0;
 
-	printf ("\nTesting your parser on various source files (1 mark each)\n");
+
+	printf ("\nTesting your compiler on various JACK programs (1/2 mark each)\n");
 	for (int j = 0 ; j < NumberTestFiles ; j++) // for each test file
 	{
-		printf ("File %s \n", testFiles[j]);
-		InitParser (testFiles[j]);
+		printf ("JACK Program %s:\n", testFiles[j]);
+		InitCompiler ();
 		fail = 0;
-		ParserInfo p = Parse ();
+		ParserInfo p = compile (testFiles[j]);
 		if (p.er != correctInfo[j].er)
 			fail = 1;
 		else if (correctInfo[j].er != none && (p.tk.tp != correctInfo[j].tk.tp || p.tk.ln != correctInfo[j].tk.ln || (correctInfo[j].er != lexerErr && strcmp (correctInfo[j].tk.lx , p.tk.lx))) )
 			fail = 1;
 		else
-			printf ("	PASSED\n");
+			printf ("\t$$ Great PASSED :-)\n");
 		if (fail)
 		{
-			printf ("** Oops: your parser returned the following info:\n");
+			printf ("** Oops: your compiler returned the following info:\n");
 			ShowInfo (p);
 			printf ("It should have returned:\n");
 			ShowInfo (correctInfo[j]);
@@ -196,18 +213,18 @@ int t_parser ()
 			m--;
 		}
 		//printf ("Calling your StopParser function\n");
-		StopParser ();
+		StopCompiler ();
 	}
 
-
-	sprintf (s,"%i/20 for the parser", m);
+	m = (int) (m/2.0);
+	sprintf (s,"%i/10 for the symbol table", m);
 	if (!Presubmission)
-		AddTestString (m, 20, s, 1);
+		AddTestString (m, 10, s, 1);
 	return m;
 }
 
 
-#ifdef TEST_PARSER
+#ifdef TEST_COMPILER
 int main (int argc, char* argv[])
 {
 	FILE* jsonFile;
@@ -221,14 +238,13 @@ int main (int argc, char* argv[])
 	printf ("\t=========================================\n");
 	printf ("Started ...\n");
 
-	tot += t_parser ();
+	tot += t_compiler ();
 
-	if (Presubmission)
-	{
-		printf ("\n---------------------------------------------------\n");
-		printf ("\t\tTotal mark = %i/20\n", tot);
-		printf ("---------------------------------------------------\n\n");
-	}
+
+	printf ("\n---------------------------------------------------\n");
+	printf ("\t\tTotal mark = %i/10\n", tot);
+	printf ("---------------------------------------------------\n\n");
+
 	printf ("Finished\n");
 
 
@@ -240,7 +256,6 @@ int main (int argc, char* argv[])
 		//fprintf (jsonFile, "%s", JsonStr);
 		//fclose (jsonFile);
 	}
-
 
 	return 0;
 }
