@@ -26,10 +26,33 @@ ParserInfo compile (char* dir_name)
 {
 	ParserInfo p;
 
-	// write your code below
+	DIR *directory2 = opendir(dir_name);
 
+	struct dirent *enter2;
 
-	p.er = none;
+	initglobalST();
+	while((enter2 = readdir(directory2)) != NULL){
+		char full_path[1024];
+		snprintf(full_path, sizeof(full_path), "%s/%s", dir_name, enter2->d_name);
+
+		InitParser(full_path);
+		globalParse();
+	}
+
+	DIR *directory = opendir(dir_name);
+
+	struct dirent *enter;
+
+	InitSymbolTable();
+	while((enter = readdir(directory)) != NULL){
+		char full_path[1024];
+		snprintf(full_path, sizeof(full_path), "%s/%s", dir_name, enter->d_name);
+
+		InitParser(full_path);
+		p = Parse();
+	}
+	
+	StopSymbolTable();
 	return p;
 }
 
@@ -45,7 +68,8 @@ int StopCompiler ()
 int main ()
 {
 	InitCompiler ();
-	ParserInfo p = compile ("Pong");
+	ParserInfo p = compile ("Square3");
+	
 	PrintError (p);
 	StopCompiler ();
 	return 1;

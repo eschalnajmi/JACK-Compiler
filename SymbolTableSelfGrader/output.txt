@@ -1,0 +1,71 @@
+	$$$ Checking your lexer, behold $$$
+	=========================================
+Started ...
+
+Testing your compiler on various JACK programs (1/2 mark each)
+JACK Program UNDECLAR_VAR:
+	$$ Great PASSED :-)
+JACK Program REDECLAR_VAR:
+	$$ Great PASSED :-)
+JACK Program UNDECLAR_SUB:
+	$$ Great PASSED :-)
+JACK Program DECLARED_SUB:
+	$$ Great PASSED :-)
+JACK Program DECLARED_VAR:
+	$$ Great PASSED :-)
+JACK Program DECLAR_EXT_FUN:
+	$$ Great PASSED :-)
+JACK Program UNDECLAR_EXT_FUN:
+	$$ Great PASSED :-)
+JACK Program UNDECLAR_EXT_METH:
+	$$ Great PASSED :-)
+JACK Program DECLAR_EXT_METH:
+	$$ Great PASSED :-)
+JACK Program UNDECLAR_CLASS:
+** Oops: your compiler returned the following info:
+none
+It should have returned:
+error type: undeclared identifier, line: 4,token: T, 
+Sorry, -1 mark
+JACK Program USES_MATH_LIB:
+	$$ Great PASSED :-)
+JACK Program ERR_MATH_LIB:
+	$$ Great PASSED :-)
+JACK Program Pong:
+	$$ Great PASSED :-)
+JACK Program Square:
+	$$ Great PASSED :-)
+JACK Program StringTest:
+** Oops: your compiler returned the following info:
+error type: undeclared identifier, line: 23,token: Output, 
+It should have returned:
+none
+Sorry, -1 mark
+JACK Program Square1:
+	$$ Great PASSED :-)
+JACK Program Square2:
+** Oops: your compiler returned the following info:
+none
+It should have returned:
+error type: undeclared identifier, line: 45,token: moveRigh, 
+Sorry, -1 mark
+JACK Program Square3:
+** Oops: your compiler returned the following info:
+none
+It should have returned:
+error type: undeclared identifier, line: 35,token: squar, 
+Sorry, -1 mark
+JACK Program ComplexArrays:
+	$$ Great PASSED :-)
+JACK Program Pong1:
+** Oops: your compiler returned the following info:
+none
+It should have returned:
+error type: undeclared identifier, line: 26,token: bas, 
+Sorry, -1 mark
+
+---------------------------------------------------
+		Total mark = 7/10
+---------------------------------------------------
+
+Finished

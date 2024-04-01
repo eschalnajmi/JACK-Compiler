@@ -35,26 +35,6 @@ int pline = 1;
 char delimiters[5] = {' ', '\n', '\t', '\r'};
 char symbols[22] = {'{', '}', '(', ')', '[', ']', '.', ',', ';','+','-', '*', '/', '&', '|', '<', '>', '=', '~'};
 
-char* TokenTypeString (TokenType t)
-{
-	switch (t)
-	{
-		case RESWORD: return "RESWORD";
-		case ID: return "ID";
-		case INT: return "INT";
-		case SYMBOL: return "SYMBOL";
-		case STRING: return "STRING";
-		case EOFile: return "EOFile";
-		case ERR: return "ERR";
-    	default: return "Not a recognised token type";
-	}
-}
-
-void PrintTokens (Token t)
-{
-	printf ("<%s, %i, %s, %s>\n", t.fl, t.ln , t.lx, TokenTypeString (t.tp));
-}
-
 int isletter(char c){
     if(c <= 122 && c>= 97){
         return 0;
@@ -450,23 +430,3 @@ int StopLexer (){
     free(arrayinput);
 	return 0;
 }
-
-// do not remove the next line
-#ifndef TEST
-int main (){
-	// implement your main function here
-  // NOTE: the autograder will not use your main function
-  InitLexer("NewLineInStr copy.jack");
-
-  Token token = GetNextToken();
-  PrintTokens(token);
-
-  while(token.tp != EOFile && token.tp != ERR){
-    PrintTokens(token);
-    token = GetNextToken ();
-  }
-  StopLexer();
-  return 0;
-}
-// do not remove the next line
-#endif
