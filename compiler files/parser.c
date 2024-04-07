@@ -4,6 +4,7 @@
 
 #include "lexer.h"
 #include "parser.h"
+#include "symbols.h"
 
 
 // you can declare prototypes of parser functions below
@@ -30,15 +31,8 @@ ParserInfo type();
 ParserInfo classVarDeclar();
 ParserInfo memberDeclar();
 ParserInfo class();
-int isVarIdentifier(char* inputID);
-int isFunctionIdentifier(char* inputID);
 
 int numtokens;
-int currentindex = 0;
-char* varIdentifiers[500];
-int varIDIndex = 0;
-char* functionIdentifiers[500];
-int functionIDIndex = 0;
 
 // [] 0 or 1
 // {} 0 or many
@@ -46,7 +40,6 @@ int functionIDIndex = 0;
 ParserInfo operand(){
 	ParserInfo pi;
 	pi.er = none;
-	int synterror = 0;
 
 	Token token =  GetNextToken();
 
@@ -57,11 +50,12 @@ ParserInfo operand(){
 	}
 
 	if(token.tp == ID){
-		/*if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+
+		if(FindUndeclarSymbol(token) == -1){
 			pi.er = undecIdentifier;
 			pi.tk = token;
 			return pi;
-		}*/
+		}
 
 		token = PeekNextToken();
 		if(strcmp(token.lx, ".") == 0){
@@ -70,6 +64,12 @@ ParserInfo operand(){
 
 			if(token.tp != ID){
 				pi.er = idExpected;
+				pi.tk = token;
+				return pi;
+			}
+
+			if(FindUndeclarSymbol(token) == -1){
+				pi.er = undecIdentifier;
 				pi.tk = token;
 				return pi;
 			}
@@ -307,7 +307,7 @@ ParserInfo subroutineCall(){
 		return pi;
 	}
 
-	if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+	if(FindUndeclarSymbol(token) == -1){
 		pi.er = undecIdentifier;
 		pi.tk = token;
 		return pi;
@@ -324,7 +324,7 @@ ParserInfo subroutineCall(){
 			return pi;
 		}
 
-		if(isFunctionIdentifier(token.lx) == 0){
+		if(FindUndeclarSymbol(token) == -1){
 			pi.er = undecIdentifier;
 			pi.tk = token;
 			return pi;
@@ -410,6 +410,8 @@ ParserInfo whileStatement(){
 		return pi;
 	}
 
+	newScope();
+
 	while(!(strcmp(token.lx, "}") == 0)){
 		pi = statement();
 		if(pi.er != none){
@@ -423,6 +425,8 @@ ParserInfo whileStatement(){
 		pi.er = closeBraceExpected;
 		pi.tk = token;
 	}
+
+	endScope();
 
 	return pi;
 }
@@ -461,6 +465,8 @@ ParserInfo ifStatement(){
 		return pi;
 	}
 
+	newScope();
+
 	while(!(strcmp(token.lx, "}") == 0)){
 		pi = statement();
 		if(pi.er != none){
@@ -470,6 +476,9 @@ ParserInfo ifStatement(){
 		}	
 		token = PeekNextToken();
 	}
+
+	endScope();
+
 	GetNextToken();
 	token = PeekNextToken();
 	if(strcmp(token.lx, "else")== 0){
@@ -486,6 +495,8 @@ ParserInfo ifStatement(){
 ParserInfo elseStatement(){
 	ParserInfo pi;
 	pi.er = none;
+
+	newScope();
 
 	Token token = GetNextToken();
 	if(!(strcmp(token.lx, "{") == 0)){
@@ -508,25 +519,9 @@ ParserInfo elseStatement(){
 		pi.tk = token;
 	}
 
+	endScope();
+
 	return pi;
-}
-
-int isVarIdentifier(char* inputID){
-	for(int i = 0; i <= varIDIndex; i++){
-		if(strcmp(inputID, varIdentifiers[i]) == 0){
-			return 1;
-		}
-	}
-	return 0;
-}
-
-int isFunctionIdentifier(char* inputID){
-	for(int i = 0; i <= functionIDIndex; i++){
-		if(strcmp(inputID, functionIdentifiers[i]) == 0){
-			return 1;
-		}
-	}
-	return 0;
 }
 
 // let identifier [ [ expression ] ] = expression ;
@@ -541,8 +536,8 @@ ParserInfo letStatement(){
 		pi.tk = token;
 		return pi;
 	}
-
-	if(isVarIdentifier(token.lx) == 0){
+	
+	if(FindUndeclarSymbol(token) == -1){
 		pi.er = undecIdentifier;
 		pi.tk = token;
 		return pi;
@@ -567,30 +562,6 @@ ParserInfo letStatement(){
 	if(!(strcmp(token.lx,"=") == 0)){
 		pi.er = equalExpected;
 		pi.tk = token;
-		return pi;
-	}
-
-	if(strcmp(PeekNextToken().lx, "(") == 0){
-		GetNextToken();
-		pi = expression();
-		if(pi.er != none){
-			return pi;
-		}
-
-		token = GetNextToken();
-		if(!(strcmp(token.lx, ")") == 0)){
-			pi.er = closeParenExpected;
-			pi.tk = token;
-			return pi;
-		}
-
-		token = GetNextToken();
-
-		if(!(strcmp(token.lx,";") == 0)){
-			pi.er = semicolonExpected;
-			pi.tk = token;
-		}
-
 		return pi;
 	}
 	
@@ -627,11 +598,13 @@ ParserInfo varDeclarStatement(){
 		pi.er = idExpected;
 		pi.tk = token;
 		return pi;
+	}  else if(FindRedeclarSymbol(token) == 0){
+		pi.er = redecIdentifier;
+		pi.tk = token;
+		return pi;
 	}
 
-	varIdentifiers[varIDIndex] = (char*)malloc(sizeof(token.lx));
-	strcpy(varIdentifiers[varIDIndex], token.lx);
-	varIDIndex++;
+	InsertSymbol(token);
 
 	token = GetNextToken();
 
@@ -642,11 +615,13 @@ ParserInfo varDeclarStatement(){
 			pi.er = idExpected;
 			pi.tk = token;
 			return pi;
+		} else if(FindRedeclarSymbol(token) == 0){
+			pi.er = redecIdentifier;
+			pi.tk = token;
+			return pi;
 		}
 
-		varIdentifiers[varIDIndex] = (char*)malloc(sizeof(token.lx));
-		strcpy(varIdentifiers[varIDIndex], token.lx);
-		varIDIndex++;
+		InsertSymbol(token);
 
 		token = GetNextToken();
 	}
@@ -691,6 +666,7 @@ ParserInfo statement(){
 ParserInfo subroutineBody(){
 	ParserInfo pi;
 	pi.er = none;
+	
 
 	Token token = GetNextToken();
 
@@ -699,6 +675,8 @@ ParserInfo subroutineBody(){
 		pi.tk = token;
 		return pi;
 	}
+
+	newScope();
 
 	while(!(strcmp(PeekNextToken().lx, "}") == 0)){
 		pi = statement();
@@ -712,6 +690,8 @@ ParserInfo subroutineBody(){
 		pi.er = closeBraceExpected;
 		pi.tk = token;
 	}
+
+	endScope();
 
 	return pi;
 }
@@ -737,7 +717,13 @@ ParserInfo paramList(){
 		pi.er = idExpected;
 		pi.tk = token;
 		return pi;
+	} else if(FindRedeclarSymbol(token) == 0){
+		pi.er = redecIdentifier;
+		pi.tk = token;
+		return pi;
 	}
+
+	InsertSymbol(token);
 
 	while(strcmp(PeekNextToken().lx, ",") == 0){
 		GetNextToken();
@@ -752,7 +738,15 @@ ParserInfo paramList(){
 			pi.er = idExpected;
 			pi.tk = token;
 			return pi;
+		} else if(FindRedeclarSymbol(token) == 0){
+			pi.er = redecIdentifier;
+			pi.tk = token;
+			return pi;
 		}
+
+		InsertSymbol(token);
+
+
 	}
 	return pi;
 }
@@ -786,16 +780,13 @@ ParserInfo subroutineDeclar(){
 		pi.er = idExpected;
 		pi.tk = token;
 		return pi;
-	} else {
-		if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
-			pi.er = redecIdentifier;
-			pi.tk = token;
-			return pi;
-		}
-		functionIdentifiers[functionIDIndex] = (char*)malloc(sizeof(token.lx));
-		strcpy(functionIdentifiers[functionIDIndex], token.lx);
-		functionIDIndex++;
+	} else if(FindRedeclarSymbol(token) == 0){
+		pi.er = redecIdentifier;
+		pi.tk = token;
+		return pi;
 	}
+
+	InsertSymbol(token);
 
 	token = GetNextToken();
 
@@ -833,14 +824,6 @@ ParserInfo type(){
 	pi.er = none;
 
 	Token token = GetNextToken();
-	
-	if(token.tp == ID){
-		if(isVarIdentifier(token.lx) == 0 && isFunctionIdentifier(token.lx) == 0){
-			pi.er = undecIdentifier;
-			pi.tk = token;
-			return pi;
-		}
-	}
 
 	if(!(strcmp(token.lx, "int") == 0 || strcmp(token.lx, "char") == 0 || strcmp(token.lx, "boolean") == 0 || token.tp == ID)){
 		pi.er = illegalType;
@@ -874,17 +857,13 @@ ParserInfo classVarDeclar(){
 		pi.er = idExpected;
 		pi.tk = token;
 		return pi;
-	}
-
-	if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+	} else if(FindRedeclarSymbol(token) == 0){
 		pi.er = redecIdentifier;
 		pi.tk = token;
 		return pi;
 	}
 
-	varIdentifiers[varIDIndex] = (char*)malloc(sizeof(token.lx));
-	strcpy(varIdentifiers[varIDIndex], token.lx);
-	varIDIndex++;
+	InsertSymbol(token);
 
 	while(strcmp(PeekNextToken().lx, ",") == 0){
 		GetNextToken();
@@ -894,17 +873,13 @@ ParserInfo classVarDeclar(){
 			pi.er = idExpected;
 			pi.tk = token;
 			return pi;
-		}
-
-		if(isVarIdentifier(token.lx) == 0 || isFunctionIdentifier(token.lx) == 0){
+		} else if(FindRedeclarSymbol(token) == 0){
 			pi.er = redecIdentifier;
 			pi.tk = token;
 			return pi;
 		}
 
-		varIdentifiers[varIDIndex] = (char*)malloc(sizeof(token.lx));
-		strcpy(varIdentifiers[varIDIndex], token.lx);
-		varIDIndex++;
+		InsertSymbol(token);
 	}
 
 	token = GetNextToken();
@@ -945,6 +920,7 @@ ParserInfo memberDeclar(){
 
 // class identifier { {memberDeclar} }
 ParserInfo class(){
+
 	ParserInfo pi;
 	pi.er = none;
 
@@ -962,14 +938,17 @@ ParserInfo class(){
 		pi.er = idExpected;
 		pi.tk = token;
 		return pi;
+	} else if(FindRedeclarSymbol(token) == 0){
+		pi.er = redecIdentifier;
+		pi.tk = token;
+		return pi;
 	}
-	
-	functionIdentifiers[functionIDIndex] = (char*)malloc(sizeof(token.lx));
-	strcpy(functionIdentifiers[functionIDIndex], token.lx);
-	functionIDIndex++;
+
+	InsertSymbol(token);
 
 	token = GetNextToken();
 
+	
 	if(!(strcmp(token.lx, "{") == 0)){
 		pi.er = openBraceExpected;
 		pi.tk = token;
@@ -1001,6 +980,7 @@ int InitParser (char* file_name)
 
 ParserInfo Parse ()
 {
+
 	ParserInfo pi;
 
 	Token token = GetNextToken();
@@ -1023,18 +1003,6 @@ ParserInfo Parse ()
 
 int StopParser ()
 {
-	free(varIdentifiers);
-	free(functionIdentifiers);
-
+	StopLexer();
 	return 1;
 }
-
-#ifndef TEST_PARSER
-int main ()
-{
-	InitParser("semicolonExpected.jack");
-	ParserInfo pi = Parse();
-	ShowInfo(pi);
-	return 1;
-}
-#endif

@@ -16,7 +16,7 @@ Date Work Commenced: 19/03/2024
 
 #include "symbols.h"
 
-
+// idea: structs for dirST & classesST (containing class vars and classmethods).
 
 SymbolTable* symbol_tables[1000];
 dirSymbolTable* globalST;
@@ -25,10 +25,16 @@ int pointer = 0;
 
 void initglobalST(){
     globalST = malloc(sizeof(dirSymbolTable));
+    //globalST->varpointer = 0;
     globalST->methodpointer = 0;
     globalST->classpointer = 0;
     globalST->librariesUsedPointer = 0;
 }
+
+/*void addglobalvar(Token tk){
+    globalST->varidentifiers[globalST->varpointer].token = tk;
+    globalST->varpointer++;
+}*/
 
 void addglobalmethod(Token tk){
     globalST->methodidentifiers[globalST->methodpointer].token = tk;
@@ -45,15 +51,16 @@ void globalParse(){
 	while(token.tp != EOFile){
 		if(strcmp(token.lx, "class") == 0){
 			addglobalclass(GetNextToken());
-		} else if(strcmp(token.lx, "function") == 0 || strcmp(token.lx, "method") == 0 || strcmp(token.lx, "constructor") == 0 || strcmp(token.lx, "function") == 0){
+		} /*else if(strcmp(token.lx, "static") == 0 || strcmp(token.lx, "field") == 0){
+			GetNextToken();
+			addglobalvar(GetNextToken());
+		}*/ else if(strcmp(token.lx, "function") == 0 || strcmp(token.lx, "method") == 0 || strcmp(token.lx, "constructor") == 0 || strcmp(token.lx, "function") == 0 || strcmp(token.lx, "method") == 0){
 			GetNextToken();
 			addglobalmethod(GetNextToken());
 		} else if(strcmp(token.lx, "Math") == 0 || strcmp(token.lx, "Memory") == 0 || strcmp(token.lx, "Screen") == 0 || strcmp(token.lx, "Output") == 0 || strcmp(token.lx, "Keyboard") == 0 || strcmp(token.lx, "String") == 0 || strcmp(token.lx, "Array") == 0 || strcmp(token.lx, "Sys") == 0){
-            if(findGlobal(token) == -1 && globalST->librariesUsedPointer < 8){
-                globalST->librariesUsed[globalST->librariesUsedPointer].token = token;
-                globalST->librariesUsedPointer++;
-                addJACKMethods(token);
-            }
+            globalST->librariesUsed[globalST->librariesUsedPointer].token = token;
+            globalST->librariesUsedPointer++;
+            addJACKMethods(token);
         }
 		token = GetNextToken();
 	}
@@ -232,9 +239,8 @@ void newScope(){
 }
 
 void endScope(){
-    if(pointer > 0){
-        pointer--;
-    }
+    free(symbol_tables[pointer-1]);
+    pointer--;
 }
 
 void InitSymbolTable(){
@@ -255,12 +261,14 @@ int FindUndeclarSymbol(Token t){
     for(int i = pointer-1; i >= 0; i--){
         for(int j = 0; j < symbol_tables[i]->address; j++){
             if(strcmp(symbol_tables[i]->symbols[j].token.lx, t.lx) == 0){
+                //printf(" %s declared\n", t.lx);
                 return 0;
             }
         }
     }
 
     return findGlobal(t);
+    //return -1;
 }
 
 int FindRedeclarSymbol(Token t){
