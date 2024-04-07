@@ -5,8 +5,6 @@
 
 #include "parser.h"
 #include "symbols.h"
-#include <dirent.h>
-#include <stdio.h>
 
 int InitCompiler ();
 ParserInfo compile (char* dir_name);

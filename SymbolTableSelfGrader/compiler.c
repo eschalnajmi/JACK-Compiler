@@ -15,7 +15,8 @@ Date Work Commenced:
 *************************************************************************/
 
 #include "compiler.h"
-
+#include <dirent.h>
+#include <stdio.h>
 
 int InitCompiler ()
 {
@@ -32,7 +33,9 @@ ParserInfo compile (char* dir_name)
 
 	initglobalST();
 	while((enter2 = readdir(directory2)) != NULL){
-		if (enter2->d_type != DT_REG) continue;
+		//if (enter2->d_type != DT_REG) continue;
+
+		if (strcmp(enter2->d_name , ".") == 0 || strcmp(enter2->d_name ,"..") == 0) continue;
 
 		char full_path[1024];
 		snprintf(full_path, sizeof(full_path), "%s/%s", dir_name, enter2->d_name);
@@ -48,7 +51,8 @@ ParserInfo compile (char* dir_name)
 
 	InitSymbolTable();
 	while((enter = readdir(directory)) != NULL){
-		if (enter->d_type != DT_REG) continue;
+		//if (enter->d_type != DT_REG) continue;
+		if (strcmp(enter->d_name , ".") == 0 || strcmp(enter->d_name ,"..") == 0) continue;
 
 		char full_path[1024];
 		snprintf(full_path, sizeof(full_path), "%s/%s", dir_name, enter->d_name);
