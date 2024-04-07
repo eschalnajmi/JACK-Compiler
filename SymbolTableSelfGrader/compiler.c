@@ -32,11 +32,14 @@ ParserInfo compile (char* dir_name)
 
 	initglobalST();
 	while((enter2 = readdir(directory2)) != NULL){
+		if (enter2->d_type != DT_REG) continue;
+
 		char full_path[1024];
 		snprintf(full_path, sizeof(full_path), "%s/%s", dir_name, enter2->d_name);
 
 		InitParser(full_path);
 		globalParse();
+		StopParser();
 	}
 
 	DIR *directory = opendir(dir_name);
@@ -45,11 +48,22 @@ ParserInfo compile (char* dir_name)
 
 	InitSymbolTable();
 	while((enter = readdir(directory)) != NULL){
+		if (enter->d_type != DT_REG) continue;
+
 		char full_path[1024];
 		snprintf(full_path, sizeof(full_path), "%s/%s", dir_name, enter->d_name);
 
+		//printf("%s\n", full_path);
+
 		InitParser(full_path);
 		p = Parse();
+		StopParser();
+
+		//printf("%s\n", p.tk.lx);
+
+		if(p.er != none){
+			break;
+		}
 	}
 	
 	StopSymbolTable();
@@ -68,7 +82,7 @@ int StopCompiler ()
 int main ()
 {
 	InitCompiler ();
-	ParserInfo p = compile ("Square3");
+	ParserInfo p = compile ("Square2");
 	
 	PrintError (p);
 	StopCompiler ();

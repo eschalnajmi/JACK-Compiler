@@ -60,6 +60,7 @@ ParserInfo operand(){
 		token = PeekNextToken();
 		if(strcmp(token.lx, ".") == 0){
 			token = GetNextToken();
+			
 			token = GetNextToken();
 
 			if(token.tp != ID){
@@ -99,6 +100,7 @@ ParserInfo operand(){
 				}
 
 				token = GetNextToken();
+
 				if(!(strcmp(token.lx, ")") == 0)){
 					pi.er = closeParenExpected;
 					pi.tk = token;
@@ -248,7 +250,7 @@ ParserInfo returnStatement(){
 	Token token = PeekNextToken();
 
 	if(strcmp(token.lx, ";") == 0){
-		GetNextToken();
+		token = GetNextToken();
 		return pi;
 	}
 
@@ -308,7 +310,6 @@ ParserInfo subroutineCall(){
 	}
 
 	if(FindUndeclarSymbol(token) == -1){
-		printf("%s HIT\n", token.lx);
 		pi.er = undecIdentifier;
 		pi.tk = token;
 		return pi;
@@ -339,6 +340,7 @@ ParserInfo subroutineCall(){
 		pi.tk = token;
 		return pi;
 	}
+	
 
 	pi = expressionList();
 	if(pi.er != none){
@@ -368,7 +370,6 @@ ParserInfo doStatement(){
 
 
 	Token token = GetNextToken();
-
 	if(!(strcmp(token.lx, ";") == 0)){
 		pi.er = semicolonExpected;
 		pi.tk = token;
@@ -469,8 +470,13 @@ ParserInfo ifStatement(){
 	newScope();
 
 	while(!(strcmp(token.lx, "}") == 0)){
+		token = PeekNextToken();
 		pi = statement();
 		if(pi.er != none){
+			token = PeekNextToken();
+			if(pi.er == undecIdentifier){
+				return pi;
+			}
 			pi.er = closeBraceExpected;
 			pi.tk = token;
 			return pi;
@@ -685,6 +691,7 @@ ParserInfo subroutineBody(){
 	}
 
 	token = GetNextToken();
+	
 	if(!(strcmp(token.lx, "}") == 0)){
 		pi.er = closeBraceExpected;
 		pi.tk = token;
@@ -831,6 +838,12 @@ ParserInfo type(){
 		pi.tk = token;
 	}
 
+	if(token.tp == ID && FindUndeclarSymbol(token) == -1){
+
+		pi.er = undecIdentifier;
+		pi.tk = token;
+	}
+
 	return pi;
 }
 
@@ -927,6 +940,7 @@ ParserInfo class(){
 
 	Token token = GetNextToken();
 
+
 	if(!(strcmp(token.lx, "class") == 0)){
 		pi.er = classExpected;
 		pi.tk = token;
@@ -968,6 +982,8 @@ ParserInfo class(){
 		return pi;
 	}
 
+	endScope();
+
 	return pi;
 
 }
@@ -993,6 +1009,7 @@ ParserInfo Parse ()
 		}
 		token = GetNextToken();
 	}
+	StopParser();
 
 	InitParser(token.fl);
 

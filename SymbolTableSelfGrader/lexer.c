@@ -78,9 +78,9 @@ int InitLexer (char* file_name){
     fclose(file);
     file = fopen(file_name,"rw");
 
-
     arrayinput = malloc((numchars+1) * sizeof(char));
     
+
     for(int i = 0; i < numchars; i++){
         arrayinput[arraysize] = fgetc(file);
         arraysize++;
@@ -102,6 +102,7 @@ Token GetNextToken (){
     char completetoken[128];
     int ctindex = 0;
     int start = currentindex;
+
 
     for(int i = start; i < arraysize; i++){
         if(isspace(arrayinput[i]) && arrayinput[i] != '\n'){

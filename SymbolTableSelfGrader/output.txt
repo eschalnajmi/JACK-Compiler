@@ -22,19 +22,23 @@ JACK Program UNDECLAR_EXT_METH:
 JACK Program DECLAR_EXT_METH:
 	$$ Great PASSED :-)
 JACK Program UNDECLAR_CLASS:
-** Oops: your compiler returned the following info:
-none
-It should have returned:
-error type: undeclared identifier, line: 4,token: T, 
-Sorry, -1 mark
+	$$ Great PASSED :-)
 JACK Program USES_MATH_LIB:
 	$$ Great PASSED :-)
 JACK Program ERR_MATH_LIB:
 	$$ Great PASSED :-)
 JACK Program Pong:
-	$$ Great PASSED :-)
+** Oops: your compiler returned the following info:
+error type: undeclared identifier, line: 78,token: Math, 
+It should have returned:
+none
+Sorry, -1 mark
 JACK Program Square:
-	$$ Great PASSED :-)
+** Oops: your compiler returned the following info:
+error type: undeclared identifier, line: 46,token: Sys, 
+It should have returned:
+none
+Sorry, -1 mark
 JACK Program StringTest:
 ** Oops: your compiler returned the following info:
 error type: undeclared identifier, line: 23,token: Output, 
@@ -42,24 +46,24 @@ It should have returned:
 none
 Sorry, -1 mark
 JACK Program Square1:
-	$$ Great PASSED :-)
+** Oops: your compiler returned the following info:
+error type: undeclared identifier, line: 46,token: Sys, 
+It should have returned:
+error type: undeclared identifier, line: 12,token: nev, 
+Sorry, -1 mark
 JACK Program Square2:
 ** Oops: your compiler returned the following info:
-none
+error type: } expected, line: 45,token: {, 
 It should have returned:
 error type: undeclared identifier, line: 45,token: moveRigh, 
 Sorry, -1 mark
 JACK Program Square3:
-** Oops: your compiler returned the following info:
-none
-It should have returned:
-error type: undeclared identifier, line: 35,token: squar, 
-Sorry, -1 mark
+	$$ Great PASSED :-)
 JACK Program ComplexArrays:
 	$$ Great PASSED :-)
 JACK Program Pong1:
 ** Oops: your compiler returned the following info:
-none
+error type: undeclared identifier, line: 78,token: Math, 
 It should have returned:
 error type: undeclared identifier, line: 26,token: bas, 
 Sorry, -1 mark
