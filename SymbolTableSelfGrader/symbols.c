@@ -233,6 +233,7 @@ void newScope(){
 
 void endScope(){
     if(pointer > 0){
+        free(symbol_tables[pointer-1]);
         pointer--;
     }
 }

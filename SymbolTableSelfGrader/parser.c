@@ -947,6 +947,8 @@ ParserInfo class(){
 		return pi;
 	}
 
+	newScope();
+
 	token = GetNextToken();
 
 	if(token.tp != ID){
