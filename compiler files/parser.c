@@ -5,9 +5,9 @@
 #include "lexer.h"
 #include "parser.h"
 #include "symbols.h"
+#include "compiler.h"
 
 
-// you can declare prototypes of parser functions below
 ParserInfo operand();
 ParserInfo factor();
 ParserInfo term();
@@ -60,6 +60,7 @@ ParserInfo operand(){
 		token = PeekNextToken();
 		if(strcmp(token.lx, ".") == 0){
 			token = GetNextToken();
+			
 			token = GetNextToken();
 
 			if(token.tp != ID){
@@ -99,6 +100,7 @@ ParserInfo operand(){
 				}
 
 				token = GetNextToken();
+
 				if(!(strcmp(token.lx, ")") == 0)){
 					pi.er = closeParenExpected;
 					pi.tk = token;
@@ -248,7 +250,7 @@ ParserInfo returnStatement(){
 	Token token = PeekNextToken();
 
 	if(strcmp(token.lx, ";") == 0){
-		GetNextToken();
+		token = GetNextToken();
 		return pi;
 	}
 
@@ -338,6 +340,7 @@ ParserInfo subroutineCall(){
 		pi.tk = token;
 		return pi;
 	}
+	
 
 	pi = expressionList();
 	if(pi.er != none){
@@ -367,7 +370,6 @@ ParserInfo doStatement(){
 
 
 	Token token = GetNextToken();
-
 	if(!(strcmp(token.lx, ";") == 0)){
 		pi.er = semicolonExpected;
 		pi.tk = token;
@@ -468,8 +470,13 @@ ParserInfo ifStatement(){
 	newScope();
 
 	while(!(strcmp(token.lx, "}") == 0)){
+		token = PeekNextToken();
 		pi = statement();
 		if(pi.er != none){
+			token = PeekNextToken();
+			if(pi.er == undecIdentifier){
+				return pi;
+			}
 			pi.er = closeBraceExpected;
 			pi.tk = token;
 			return pi;
@@ -676,8 +683,6 @@ ParserInfo subroutineBody(){
 		return pi;
 	}
 
-	newScope();
-
 	while(!(strcmp(PeekNextToken().lx, "}") == 0)){
 		pi = statement();
 		if(pi.er != none){
@@ -686,6 +691,7 @@ ParserInfo subroutineBody(){
 	}
 
 	token = GetNextToken();
+	
 	if(!(strcmp(token.lx, "}") == 0)){
 		pi.er = closeBraceExpected;
 		pi.tk = token;
@@ -796,6 +802,8 @@ ParserInfo subroutineDeclar(){
 		return pi;
 	}
 
+	newScope();
+
 	pi = paramList();
 	if(pi.er != none){
 		return pi;
@@ -827,6 +835,12 @@ ParserInfo type(){
 
 	if(!(strcmp(token.lx, "int") == 0 || strcmp(token.lx, "char") == 0 || strcmp(token.lx, "boolean") == 0 || token.tp == ID)){
 		pi.er = illegalType;
+		pi.tk = token;
+	}
+
+	if(token.tp == ID && FindUndeclarSymbol(token) == -1){
+
+		pi.er = undecIdentifier;
 		pi.tk = token;
 	}
 
@@ -926,11 +940,14 @@ ParserInfo class(){
 
 	Token token = GetNextToken();
 
+
 	if(!(strcmp(token.lx, "class") == 0)){
 		pi.er = classExpected;
 		pi.tk = token;
 		return pi;
 	}
+
+	newScope();
 
 	token = GetNextToken();
 
@@ -967,6 +984,8 @@ ParserInfo class(){
 		return pi;
 	}
 
+	endScope();
+
 	return pi;
 
 }
@@ -974,6 +993,20 @@ ParserInfo class(){
 int InitParser (char* file_name)
 {
 	InitLexer(file_name);
+
+	char vmfn[1028];
+
+	strcpy(vmfn, file_name);
+	vmfn[strlen(file_name) - 4] = 'v';
+	vmfn[strlen(file_name) - 3] = 'm';
+	vmfn[strlen(file_name) - 2] = '\0';
+
+	vmFile = fopen(vmfn, "w");
+
+	if (vmFile == NULL)
+	{
+		return 0;
+	}
 
 	return 1;
 }
@@ -992,8 +1025,13 @@ ParserInfo Parse ()
 		}
 		token = GetNextToken();
 	}
+	StopParser();
 
-	InitParser(token.fl);
+	if(InitParser(token.fl) ==0){
+		pi.er = lexerErr;
+		pi.tk = token;
+		return pi;
+	}
 
 	pi = class();
 
@@ -1004,5 +1042,11 @@ ParserInfo Parse ()
 int StopParser ()
 {
 	StopLexer();
+
+	if (vmFile != NULL)
+	{
+		fclose(vmFile);
+	}
+
 	return 1;
 }

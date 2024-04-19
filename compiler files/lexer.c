@@ -1,29 +1,8 @@
-// cc -std=c99 lexer.c -o lexer
-/************************************************************************
-University of Leeds
-School of Computing
-COMP2932- Compiler Design and Construction
-Lexer Module
-
-I confirm that the following code has been developed and written by me and it is entirely the result of my own work.
-I also confirm that I have not copied any parts of this program from another person or any other source or facilitated someone to copy this program from me.
-I confirm that I will not publish the program online or share it with anyone without permission of the module leader.
-
-Student Name: Eschal Najmi
-Student ID: 201602938
-Email: sc22en@leeds.ac.uk
-Date Work Commenced: 08/02/2024
-*************************************************************************/
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include "lexer.h"
-
-
-// YOU CAN ADD YOUR OWN FUNCTIONS, DECLARATIONS AND VARIABLES HERE
 
 char* arrayinput;
 int arraysize;
@@ -45,9 +24,6 @@ int isletter(char c){
     return 1;
 }
 
-
-// IMPLEMENT THE FOLLOWING functions
-//***********************************
 
 // Initialise the lexer to read from source file
 // file_name is the name of the source file
@@ -78,9 +54,9 @@ int InitLexer (char* file_name){
     fclose(file);
     file = fopen(file_name,"rw");
 
-
     arrayinput = malloc((numchars+1) * sizeof(char));
     
+
     for(int i = 0; i < numchars; i++){
         arrayinput[arraysize] = fgetc(file);
         arraysize++;
@@ -102,6 +78,7 @@ Token GetNextToken (){
     char completetoken[128];
     int ctindex = 0;
     int start = currentindex;
+
 
     for(int i = start; i < arraysize; i++){
         if(isspace(arrayinput[i]) && arrayinput[i] != '\n'){
