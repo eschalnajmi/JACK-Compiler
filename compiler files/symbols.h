@@ -1,15 +1,11 @@
 #ifndef SYMBOLS_H
 #define SYMBOLS_H
 
-//#define TEST_COMPILER
-
 #include "lexer.h"
 #include "parser.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// define your own types and function prototypes for the symbol table(s) module below
 
 typedef enum{
     Math,
@@ -35,8 +31,6 @@ typedef struct {
 } SymbolTable;
 
 typedef struct {
-	//Symbol varidentifiers [1000];
-    //int varpointer;
     Symbol methodidentifiers [1000];
     int methodpointer;
     Symbol classIdentifiers [1000];
@@ -47,7 +41,6 @@ typedef struct {
 
 
 void initglobalST();
-//void addglobalvar(Token tk);
 void addglobalmethod(Token tk);
 void addglobalclass(Token tk);
 int findGlobal(Token t);
