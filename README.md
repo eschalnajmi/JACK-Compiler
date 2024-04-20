@@ -22,4 +22,4 @@ gcc compiler.c compiler.h parser.c paresr.h lexer.c lexer.h symbols.c symbols.h 
 ```
 ## Acknowledgments
 
-This code was written using test script code by [Dr Mohammad Ammar Alsalka](https://eps.leeds.ac.uk/computing/staff/635/dr-mohammad-ammar-alsalka) which has been removed in the main branch. Parser.h and Lexer.h were also provided by him.
+This code was written using test script code by [Dr. Mohammad Ammar Alsalka](https://eps.leeds.ac.uk/computing/staff/635/dr-mohammad-ammar-alsalka) which has been removed in the main branch. Parser.h and Lexer.h were also provided by him.
